@@ -1,0 +1,1776 @@
+* loader
+:PROPERTIES:
+:TYP: 0
+:FRZ: 0
+:HOI: 1
+:PUI: 1
+:LOD: ./source/test.org
+:PRE: 
+:LEX: orgmode
+:CEX: sh
+:REX: orgmode
+:END:
+** code
+#+BEGIN_SRC sh
+cat ./source/test.org
+#+END_SRC
+** result
+#+BEGIN_EXAMPLE
+
+#+END_EXAMPLE
+* org title
+:PROPERTIES:
+:TYP: 5
+:FRZ: 0
+:HOI: 1
+:PUI: 1
+:LOD: (null)
+:PRE: ./presets/org_title.r3
+:LEX: (null)
+:CEX: rebol
+:REX: text
+:END:
+** code
+#+BEGIN_SRC rebol
+REBOL []
+;; script to reformat orgfile title 
+;; made for orgnqq
+;; by cpbrown 2022
+
+lines: read/lines to-file system/script/args
+
+orgtitle: copy ""
+orgauth: copy ""
+orgnote: copy ""
+dotitle: true
+todos: copy ""
+
+wkd: [ "Monday" "Tuesday" "Wednesday" "Thursday" "Friday" "Saturday" "Sunday" ]
+mon: [ "January" "February" "March" "April" "May" "June" "July" "August" "September" "October" "November" "December" ]
+
+;; the whiggle, because english...
+whiggle: function [ t ] [
+	wh: [ "th" "st" "nd" "rd" ]
+	th: ((t % 10) >= 4) or ((t >= 10) and (t <= 20))
+	either th [ "th" ] [ pick wh (((t % 10) % 4) + 1) ]
+]
+
+n: now/date
+orgdate: join "" [ n/day whiggle n/day " of " pick mon n/month " " n/year ]
+
+foreach l lines [
+	if dotitle [
+		if parse l [ thru "-*-" to "-*-" to end ] [ 
+			sdat: copy ""
+			ldat: copy ""
+			parse l [ thru "org-time-stamp-custom-formats:" thru "(^"" copy sdat to "^"" thru " ^"" copy ldat to "^"" to end ]
+			if (sdat <> "") and (ldat <> "") [ l: join "<!-- dateformat:" [ sdat ";" ldat "-->" ] print l ]
+			continue
+		]
+		if parse l [ thru "#+TITLE:" copy orgtitle to end ] [ continue ]
+		if parse l [ thru "#+AUTHOR:" copy orgauth to end ] [ 
+			l: join "<div class=^"x^">" [ orgtitle ". by " orgauth ", " orgdate "</div>" ]
+		]
+		if parse l [ thru "#+SUBTITLE:" copy orgnote to end ] [
+			l: join "<div class=^"xs^">" [ orgnote "</div><BR><BR>" ]
+		]
+		if parse l [ thru "#+TODO:" copy todos to end ] [
+			l: join "<!-- todos:" [ todos "-->" ]
+			print l
+			continue
+		]
+		if parse l [ "#+" to end ] [ continue ]
+		if l/1 = #"*" [ dotitle: false ]
+	]
+	print l
+]
+#+END_SRC
+** result
+#+BEGIN_SRC text
+
+#+END_SRC
+* org headlines
+:PROPERTIES:
+:TYP: 5
+:FRZ: 0
+:HOI: 1
+:PUI: 1
+:LOD: (null)
+:PRE: ./presets/org_headlines.r3
+:LEX: (null)
+:CEX: rebol
+:REX: text
+:END:
+** code
+#+BEGIN_SRC rebol
+REBOL []
+;; script to:
+;; - replace org headline indentation with html details+summary tags
+;; - replace todo tag with html+js filter & scroll-to
+;; - replace org tags with html+js filter & scroll-to
+;; made for orgnqq
+;; by cpbrown 2022
+
+oph: function [t s d f b] [
+	w: format/pad t "" "^-"
+	o: join w [
+		"<div class=^"" d "^">^/"
+		w "^-<details class=^"" b "^">^/"
+		w "^-^-<summary class=^"" d "^" id=^"" s "^">" f "</summary>^/"
+		w "^-^-<div class=^"cc^">"
+	]
+	o
+]
+cla: function [t] [
+	w: format/pad t "" "^-"
+	o: join w [
+		"^-^-</div>"
+	]
+	o
+]
+clh: function [t] [
+	w: format/pad t "" "^-"
+	o: join w [
+		;"^-^-</div>^/"
+		"^-</details>^/"
+		w "</div>^/"
+	]
+	o
+]
+
+ic: [ "a" "b" "c" "d" "e" "f" ]
+px: 0
+pg: 0
+tx: 0
+cx: 0
+ff: false
+dos: copy ""
+todos: copy []
+cols: copy []
+
+lines: read/lines to-file system/script/args
+foreach l lines [
+	if parse l [ "<!-- todos:" copy dos to "-->" to end ] [
+		replace/all dos "[" ""
+		replace/all dos "]" ""
+		trim dos
+		todos: split dos " "
+		repeat x (length? todos)  [
+			bb: 1 - (abs ((((x - 1) / ((length? todos) - 1)) * 2.0) - 1))
+			bb: ((bb * 0.1) + 0.1)
+			gg: ((x - 1) / ((length? todos) - 1))
+			rr: 1 - gg
+			gg: ((gg * 0.9) + 0.1)
+			rr: ((rr * 0.9) + 0.1)
+			rr: to-integer (rr * 255)
+			gg: to-integer (gg * 255)
+			bb: to-integer (bb * 255)
+			cc: to-tuple reduce [ rr gg bb ]
+			cc: to-hex cc
+			append cols todos/:x 
+			append cols cc 
+		]
+	]
+	hl: copy ""
+	tg: copy ""
+	aa: copy ""
+	bb: copy ""
+	tgs: copy []
+	dd: copy ""
+	tt: copy ""
+	tb: copy ""
+	either parse l [ 1 6 "*" " " copy hl to end ] [
+		parse l [ copy aa thru "* " ]
+		parse hl [ copy hl to ":" copy bb to end ] 
+		parse l [ to " [" thru "]" copy hl to end ]
+		parse l [ to " [" thru "]" copy hl to ":" copy bb to end ]
+		trim hl
+		trim bb
+		if hl <> "" [
+			hlx: copy hl
+			replace/all hlx " " "_"
+			parse hlx [ to "_[" remove thru "]" ]
+			if parse l [ thru "[" copy tg to "]"  to end ] [
+				replace tg " " "_"
+				tb: join tb [ " " tg ]
+				either (length? cols) > 1 [
+					dd: join "" [ "<span class=^"ttag^" style=^"color:#" (select cols tg) "; mix-blend-mode: screen;^"><a href=^"#" hlx "^" onclick=^"tc('" tg "', '" hlx "');^">[" tg "]</a></span>" ]
+				] [
+									dd: join "" [ "<span class=^"ttag^"><a href=^"#" hlx "^" onclick=^"tc('" tg "', '" hlx "');^">[" tg "]</a></span>" ]
+				]
+			]
+			if bb <> "" [
+				tg: ""
+				parse bb [ 1 5 [ thru ":" copy tg (append tgs tg) to ":" ] ]
+				replace tg " " "_"
+				if (length? tgs) > 0 [
+					foreach t tgs [
+						unless t = "" [
+							tb: join tb [ " " t ]
+							tt: join tt [ "<span class=^"htag^"><a href=^"#" hlx "^" onclick=^"tc('" t "', '" hlx "');^">:" t ":</a></span>" ]
+						]
+					]
+				]
+			]
+			trim tb
+			cx: (length? aa) - 2
+			pp: cx + cx
+			gg: cx + cx
+			ll: join "" [ dd hl tt ]
+			;print ll
+			ss: copy ""
+			ee: copy ""
+			cc: copy ""
+			;gg = px
+			if ff == true [ cc: cla pg ]
+			if px >= cx [
+				if px > cx [ gg: (px + px) ]
+				if ff = true [ ee: clh pg ]
+				loop (px - cx) [
+					gg: gg - 2
+					hh: clh gg
+					ee: join "" [ ee hh ]
+				]
+			]
+			ss: oph pp hlx ic/(cx + 1) ll tb
+			;print ss
+			ee: join "" [ cc "^/" ee ss ]
+			ff: true
+			px: cx
+			pg: gg
+			;l: join ee [ ll ]
+			;print ee
+			l: ee
+		]
+		print l
+	] [
+		print l
+	]
+]
+ee: copy ""
+gg: 0
+px: px + 1
+print cla px
+if px >= 0 [
+	if px > 0 [ gg: (px + px) ]
+	loop (px) [ 
+		gg: gg - 2 
+		hh: clh gg
+		print hh
+	]
+]
+print "</HTML>"
+#+END_SRC
+** result
+#+BEGIN_SRC text
+
+#+END_SRC
+* org tables
+:PROPERTIES:
+:TYP: 5
+:FRZ: 0
+:HOI: 1
+:PUI: 1
+:LOD: (null)
+:PRE: ./presets/org_tables.r3
+:LEX: (null)
+:CEX: rebol
+:REX: text
+:END:
+** code
+#+BEGIN_SRC rebol
+REBOL []
+;; script to replace org table block tags with html pre tag
+;; made for orgnqq
+;; by cpbrown 2022
+
+e: "<pre class=^"widetable^">"
+c: "</pre>"
+lines: read/lines to-file system/script/args
+amtable: false
+amxmp: false
+n: 1
+foreach l lines [
+	if parse l [ to "#+BEGIN_EXAMPLE" to end ] [ amxmp: true ]
+	if parse l [ to "#+END_EXAMPLE" to end ] [ amxmp: false ]
+	if not amxmp [
+		if parse l [ to "#+BEGIN_TABLE" to end ] [
+			mvh: 0.9
+			if (length? lines) > n [
+				cco: (length? lines/(n + 1)) * 1.0
+				mvh: min 200.0 (max (cco / 200.0) 0.0)
+				mvh: (1.0 - mvh) + 0.5
+				l: join "" [ "<pre class=^"widetable^" style=^"font-size:" mvh "vw;^">" ]
+			]
+		]
+		if parse l [ to "#+END_TABLE" to end ] [
+			parse l [ to "#+END_" remove thru "TABLE" insert (c) ]
+		]
+
+		if parse l [ to "#+BEGIN: columnview" to end ] [
+			amtable: true
+			mvh: 0.9
+			if (length? lines) > n [
+				cco: (length? lines/(n + 1)) * 1.0
+				mvh: min 200.0 (max (cco / 200.0) 0.0)
+				mvh: (1.0 - mvh) + 0.5
+				l: join "" [ "<pre class=^"widetable^" style=^"font-size:" mvh "vw;^">" ]
+			]
+		]
+		if parse l [ to "#+END" to end ] [
+			if amtable [
+				parse l [ to "#+END" remove to end insert (c) ]
+				amtable: false
+			]
+		]
+	]
+	print l
+	n: n + 1
+]
+#+END_SRC
+** result
+#+BEGIN_SRC text
+
+#+END_SRC
+* org source
+:PROPERTIES:
+:TYP: 5
+:FRZ: 0
+:HOI: 1
+:PUI: 1
+:LOD: (null)
+:PRE: ./presets/org_source.r3
+:LEX: (null)
+:CEX: rebol
+:REX: text
+:END:
+** code
+#+BEGIN_SRC rebol
+REBOL []
+;; script to replace source block tags with html xmp tags
+;; made for orgnqq
+;; by cpbrown 2022
+
+e: "<xmp>"
+c: "</xmp>"
+lines: read/lines to-file system/script/args
+amexample: false
+foreach l lines [
+	if parse l [ to "#+BEGIN_SRC" to end ] [
+		parse l [ to "#+BEGIN" remove to end insert (e) ]
+	]
+	if parse l [ to "#+END_SRC" to end ] [
+		parse l [ to "#+END_" remove to end insert (c) ]
+	]
+	if parse l [ to "#+BEGIN_EXAMPLE" to end ] [
+		parse l [ to "#+BEGIN" remove to end insert (e) ]
+	]
+	if parse l [ to "#+END_EXAMPLE" to end ] [
+			parse l [ to "#+END_" remove to end insert (c) ]
+	]
+	print l
+]
+#+END_SRC
+** result
+#+BEGIN_SRC text
+
+#+END_SRC
+* org checkboxes
+:PROPERTIES:
+:TYP: 5
+:FRZ: 0
+:HOI: 1
+:PUI: 1
+:LOD: (null)
+:PRE: ./presets/org_checkboxes.r3
+:LEX: (null)
+:CEX: rebol
+:REX: text
+:END:
+** code
+#+BEGIN_SRC rebol
+REBOL []
+;; script to style org checkboxes
+;; made for orgnqq
+;; by cpbrown 2002
+
+spc: charset " ^-"
+cqq: charset " -X"
+
+amxmp: false
+ampre: false
+amsum: false
+amprop: false
+amcomment: false
+
+lines: read/lines to-file system/script/args
+foreach l lines [
+	h: copy ""
+	c: copy ""
+	t: copy l
+	chq: true
+	trim t
+
+;; block checks
+
+	if parse t [ to "<xmp" to end ] [ amxmp: true chq: false ]
+	if parse t [ to "<pre" to end ] [ ampre: true chq: false ]
+	if parse t [ to "<summary" to end ] [ amsum: true chq: false ]
+	if parse/case t [ to ":PROPERTIES:" to end ] [ amprop: true chq: false ]
+
+	if parse t [ to "</xmp" to end ] [ amxmp: false ]
+	if parse t [ to "</pre" to end ] [ ampre: false ]
+	if parse t [ to "</summary" to end ] [ amsum: false ]
+	if parse/case t [ to ":END:" to end ] [ amprop: false ]
+
+;; html comment
+;; this script doesn't handle multiline comments that start mid-line, 
+;; keep thes on their own line if possible
+	if parse t [ to "<!--" to end ] [ amcomment: true chq: false ]
+	if parse t [ to "-->" to end ] [ amcomment: false ]
+
+;; org escape check
+	if t/1 = #"," [ lst: false ]
+
+;; special case checks
+	if parse t [ [ "#+" | "<details" ] to end ] [ chq: false ]
+
+	if chq and (not amxmp) and (not ampre) and (not amsum) and (not amprop) and (not amcomment) [
+		if parse l [ 0 16 spc "- [" some cqq "]" copy h to end ] [
+			parse l [ to "- [" thru "- " copy c thru "]" to end ]
+			t: join "" [ "<span style=^"box-shadow: 1px 1px 1px #222222, -1px -1px 1px #666666; font-family: exacto; mix-blend-mode: luminosity;^">" c "</span>" ]
+			parse l [ to "- [" thru "- " a: remove thru "]" :a insert (t) ]
+		]
+	]
+	print l
+]
+#+END_SRC
+** result
+#+BEGIN_SRC text
+
+#+END_SRC
+* org lists
+:PROPERTIES:
+:TYP: 5
+:FRZ: 0
+:HOI: 1
+:PUI: 1
+:LOD: (null)
+:PRE: ./presets/org_lists.r3
+:LEX: (null)
+:CEX: rebol
+:REX: text
+:END:
+** code
+#+BEGIN_SRC rebol
+REBOL []
+;; script to add html tags to org lists
+;; made for orgnqq
+;; by cpbrown 2022
+;; special thaks to David Oliva for advice on using `to bitset` in parse,
+;; which can't be done as `to charset` in r3
+
+; use a block to keep track of indentation
+; IDS = actual indentations @ index, indent incrament at value
+; CLO = closure tags at incrament value
+; O, V = old incrament value, incrament value
+; P, S = old indent value, indent value
+; +-------------------      --+----------+---+---------------+---------------------------+--------------------------------------------------------------+---------+
+; | [O][V][P][S][LINE       ] | INDENT   | S | IDS           | CLO                       | NOTE                                                         | OUTPUT  |
+; +--------------      ------ +----------+---+---------------+---------------------------+--------------------------------------------------------------+---------+
+; | [0][1][0][2][  - A      ] | "  "     | 2 | [0 1]         | ["</ul>"]                 | 2 > 0 [ V += 1 O: V IDS/:L: V CLO/:V: "</ul>" PRINT "<ul>" ] | "<ul>"  |
+; | [1][2][2][4][    1. A1  ] | "    "   | 4 | [0 1 0 2]     | ["</ul>" "</ol>"]         | 4 > 2 [ V += 1 O: V IDS/:L: V CLO/:V: "</ol>" PRINT "<ol>" ] | "<ol>"  |
+; | [2][3][4][6][      - A1A] | "      " | 6 | [0 1 0 2 0 3] | ["</ul>" "</ol>" "</ul>"] | 6 > 4 [ V += 1 O: V IDS/:L: V CLO/:V: "</ul>" PRINT "<ul>" ] | "<ul>"  |
+; | [3][1][6][2][  - B      ] | "  "     | 2 | [0 1 0 2 0 3] | ["</ul>" "</ol>" "</ul>"] | 2 < 6 [ V = IDS/:L                                           |         |
+; |                           |          |   |               |                           | WHILE [O > V] PRINT CLO/:O O: O - 1                          | "</ul>" |
+; |                           |          |   |               |                           |                                                              | "</ol>" |
+; +---------      ------------+----------+---+---------------+---------------------------+--------------------------------------------------------------+---------+
+
+
+amu: false
+amo: false
+aml: false
+
+dnt: 0
+
+nums: charset "0123456789"
+spcs: charset " ^-"
+digit: system/catalog/bitsets/numeric
+
+clo: [ "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ]
+ids: [ 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ]
+o: 0
+v: 0
+s: 0
+p: 0
+
+amxmp: false
+ampre: false
+amsum: false
+amprop: false
+amcomment: false
+
+lines: read/lines to-file system/script/args
+foreach l lines [
+	lst: true
+	h: copy ""
+	ind: copy ""
+	opn: "<ol>"
+	cls: "</ol>"
+	t: copy l
+	trim t
+
+;; block checks
+
+	if parse t [ to "<xmp" to end ] [ amxmp: true lst: false ]
+	if parse t [ to "<pre" to end ] [ ampre: true lst: false ]
+	if parse t [ to "<summary" to end ] [ amsum: true lst: false ]
+	if parse/case t [ to ":PROPERTIES:" to end ] [ amprop: true lst: false ]
+
+	if parse t [ to "</xmp" to end ] [ amxmp: false ]
+	if parse t [ to "</pre" to end ] [ ampre: false ]
+	if parse t [ to "</summary" to end ] [ amsum: false ]
+	if parse/case t [ to ":END:" to end ] [ amprop: false ]
+
+;; html comment
+;; this script doesn't handle multiline comments that start mid-line, 
+;; keep thes on their own line if possible
+	if parse t [ to "<!--" to end ] [ amcomment: true lst: false ]
+	if parse t [ to "-->" to end ] [ amcomment: false ]
+
+;; org escape check
+	if t/1 = #"," [ lst: false ]
+
+;; special case checks
+	if parse t [ [ "#+" | "<details" ] to end ] [ lst: false ]
+
+	if lst and (not amxmp) and (not ampre) and (not amsum) and (not amprop) and (not amcomment) [
+		either parse l [ 0 16 " " 1 5 digit ". " copy h to end ] [
+			parse l [ copy ind to digit 1 5 digit ". " to end ]
+			amo: true
+		] [ amo: false ]
+		either parse l [ 0 16 #" " a: "- " :a thru "- " copy h to end ] [
+				parse l [ copy ind to "- " to end ]
+				opn: "<ul>"
+				cls: "</ul>"
+				amu: true
+		] [ amu: false ]
+		if amo or amu [
+			aml: true
+			s: (length? ind) + 1
+			ct: copy ""
+			if s > p [ l: join ind [ opn "<li>" h "</li>" ] v: v + 1 ids/:s: v clo/:v: cls ]
+			if s = p [ l: join ind [ "<li>" h "</li>" ] ]
+			if s < p [
+				v: ids/:s
+				while [o > v] [ ct: join ct clo/:o o: o - 1 ]
+				l: join "" [ ind ct "<li>" h "</li>" ]
+			]
+			p: s
+			o: v
+		]
+	]
+	if ((not amo) and (not amu) and aml) or ((not lst) and aml) [
+		ct: copy ""
+		while [o > 0] [ ct: join ct clo/:o o: o - 1 ]
+		l: join ct l
+		aml: false
+		clo: [ "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ]
+		nds: [ 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ]
+		o: 0
+		v: 0
+		s: 0
+		p: 0
+	]
+	print l
+]
+#+END_SRC
+** result
+#+BEGIN_SRC text
+
+#+END_SRC
+* org properties
+:PROPERTIES:
+:TYP: 5
+:FRZ: 0
+:HOI: 1
+:PUI: 1
+:LOD: (null)
+:PRE: ./presets/org_properties.r3
+:LEX: (null)
+:CEX: rebol
+:REX: text
+:END:
+** code
+#+BEGIN_SRC rebol
+REBOL []
+;; script to replace org property bins with html tables
+;; made for orgnqq
+;; by cpbrown 2022
+
+lines: read/lines to-file system/script/args
+amproperty: false
+doproperty: false
+amxmp: false
+foreach l lines [
+	if parse l [ to "<xmp" to end ] [ amxmp: true ]
+	if parse l [ to "</xmp" to end ] [ amxmp: false ]
+	if parse l [ to "#+ATTR_ORG: prop: t" to end ] [ doproperty: true continue ]
+	if (not amxmp) and (doproperty) [
+		either parse/case l [ to ":PROPERTIES:" to end ] [
+			parse l [ insert "<TABLE>^/<TR><TD COLSPAN=^"2^">" to ":PROP"]
+			l: join l "</TD></TR>"
+			parse l [ some [to ":" remove thru ":"] ]
+			amproperty: true
+		] [ 
+			if parse/case l [ to ":END:" to end ] [ amproperty: false doproperty: false l: "</TABLE>" ]
+			if amproperty [
+				parse l [ insert "<TR><TD class=^"propname^">" thru ":" to ":"  change ":" "</TD><TD>" ]
+				parse l [ 2 [to ":" remove thru ":"] ]
+				l: join l "</TD></TR>"
+			]
+		]
+	]
+	if (not amxmp) and (not doproperty) [
+		either parse/case l [ to ":PROPERTIES:" to end ] [
+			amproperty: true
+			continue
+		] [
+			if parse/case l [ to ":END:" to end ] [ amproperty: false doproperty: false continue ]
+			if amproperty [ continue ]
+		]
+	]
+	print l
+]
+#+END_SRC
+** result
+#+BEGIN_SRC text
+
+#+END_SRC
+* org dates
+:PROPERTIES:
+:TYP: 5
+:FRZ: 0
+:HOI: 1
+:PUI: 1
+:LOD: (null)
+:PRE: ./presets/org_dates.r3
+:LEX: (null)
+:CEX: rebol
+:REX: text
+:END:
+** code
+#+BEGIN_SRC rebol
+REBOL []
+;; script to reformat org dates
+;; made for orgnqq
+;; by cpbrown 2022
+
+;; emacs date format cheatsheet:
+;; sample date: Thursday 4rd of August 2022 10:45am
+;;
+;; %Y = 2022
+;; %y = 22
+;; %C = 20
+;; %m = 8
+;; %b = Aug
+;; %B = August
+;; %d = 4
+;; %e =  4
+;; %u = 3 (weekday, 0 to 6, mon - sun, don't use this)
+;; %w = 4 (weekday, 0 to 6, sun - sat, don't use this)
+;; %a = thu 
+;; %A = Thursday
+;; %U = 31 (week starting sunday, don't use this)
+;; %W = 31 (week starting monday, don't use this)
+;; %j = 216 (day of year)
+;;
+;; %H = 10 (hour, 24h)
+;; %I = 10 (hour, 12h)
+;; %p = AM
+;; %M = 45
+;; %S = 0 (second)
+;; %Z = (timezone)
+;; %z = (numeric timezone)
+;; %s = (epoch seconds)
+;;
+;; %c = Aug 4 2012 10:45 AM ? ("locale preferred" = don't use this)
+;; %x = Aug 4 2012 ? ("locale preferred" = don't use this)
+;; %D = 08/04/2022 (ass-backwards non-sortable format - don't use this)
+
+;; %F = 2022-08-04 (iso sortable format)
+;;
+;; %R = 10:45
+;; %T = 10:45:00
+;; %r = 10:45:00 AM
+;; %X = 10:45 AM ? ("locale preferred" = don't use this)
+;; 
+;; %n = ^/
+;; %t = ^-
+;; %% = %
+
+
+lines: read/lines to-file system/script/args
+
+amxmp: false
+amtbl: false
+nums: charset "0123456789"
+wkd: [ "Monday" "Tuesday" "Wednesday" "Thursday" "Friday" "Saturday" "Sunday" ]
+swkd: [ "Mon" "Tue" "Wed" "Thu" "Fri" "Sat" "Sun" ]
+mon: [ "January" "February" "March" "April" "May" "June" "July" "August" "September" "October" "November" "December" ]
+smon: [ "Jan" "Feb" "Mar" "Apr" "May" "Jun" "Jul" "Aug" "Sep" "Oct" "Nov" "Dec" ]
+
+;; the whiggle, because english...
+whiggle: function [ t ] [
+	wh: [ "th" "st" "nd" "rd" ]
+	th: ((t % 10) >= 4) or ((t >= 10) and (t <= 20))
+	either th [ "th" ] [ pick wh (((t % 10) % 4) + 1) ]
+]
+sdat: copy ""
+ldat: copy ""
+locsdat: copy ""
+locldat: copy ""
+csdat: copy ""
+cldat: copy ""
+ldfn: false
+sdfn: false
+dovr: false
+
+foreach l lines [
+	amcell: false
+	sl: copy l
+	trim sl
+	if parse sl [ "#+ATTR_ORG: org-time-stamp-custom-formats:" to end ] [
+		parse l [ thru "^"<" copy locsdat to ">" thru "<" copy locldat to ">" to end ]
+		if locsdat <> "" [ sdovr: true csdat: copy locsdat]
+		if locldat <> "" [ ldovr: true cldat: copy locldat] 
+		continue
+	]
+	if parse l [ to "</div" to end ] [ sdovr: false ldovr: false ]
+	if parse l [ thru "<!-- dateformat:<" copy sdat to ">" thru "<" copy ldat to ">" to end] [
+		if ldat <> "" [ ldfn: true cldat: copy ldat ]
+		if sdat <> "" [ sdfn: true csdat: copy sdat ]
+	]
+	if parse l [ to "<xmp" to end ] [ amxmp: true ]
+	if parse l [ to "</xmp" to end ] [ amxmp: false ]
+	if parse l [ thru "|" to "|" to end ] [ amcell: true ]
+	if parse l [ to "<TABLE" to end ] [ amtbl: true ]
+	if parse l [ to "</TABLE" to end ] [ amtbl: false ]
+	if (not amxmp) and (not amtbl) and (not amcell) [
+		d: copy ""
+		ds: copy []
+;; ugly parse, surprised this works...
+		parse l [
+			some [
+				to "<" e: thru "<" [
+					a: 4 nums "-" 1 2 nums "-" 1 2 nums to ">"
+					:a copy d to ">"
+					:a remove to ">" insert (
+						s: split d " "
+						t: to-date s/1
+						m: copy ""
+						foreach p s [ if parse p [ to ":" to end ] [ m: join p " " ] ]
+;; falback format
+						o: compose [ (m) (pick wkd t/weekday) " " (t/day) (whiggle t/day) " of " (pick mon t/month) " " (t/year) ]
+;; do overrides if they exist
+;; these are do-once parses, I'm assuming there's no repetition in the override
+						if (m <> "") and (ldfn or ldovr) [
+							t/time: to-time m
+							parse cldat [ to "%Y" remove thru "%Y" insert (t/year - 2000) ]
+							parse cldat [ to "%y" remove thru "%y" insert (t/year) ]
+							parse cldat [ to "%m" remove thru "%m" insert (format/pad -2 t/month 0) ]
+							parse cldat [ to "%b" remove thru "%b" insert (pick smon t/month) ]
+							parse cldat [ to "%B" remove thru "%B" insert (pick mon t/month) ]
+							parse cldat [ to "%d" remove thru "%d" insert (format/pad -2 t/day 0) ]
+							parse cldat [ to "%e" remove thru "%e" insert (format/pad -2 t/day 0) ]
+							parse cldat [ to "%a" remove thru "%a" insert (pick swkd t/weekday) ]
+							parse cldat [ to "%A" remove thru "%A" insert (pick wkd t/weekday) ]
+							parse cldat [ to "%H" remove thru "%H" insert (format/pad -2 t/hour 0) ]
+							parse cldat [ to "%I" remove thru "%I" insert (format/pad -2 (t/hour % 12) 0) ]
+							parse cldat [ to "%p" remove thru "%p" insert (either (t/hour > 12) ["PM"] ["AM"]) ]
+							parse cldat [ to "%M" remove thru "%M" insert (format/pad -2 t/minute 0) ]
+							parse cldat [ to "%S" remove thru "%S" insert (format/pad -2 t/second 0) ]
+							parse cldat [ to "%F" remove thru "%F" insert (compose [ (t/year) "-" (format/pad -2 t/month 0) "-" (format/pad -2 t/day 0) ]) ]
+							parse cldat [ to "%R" remove thru "%R" insert (compose [ (format/pad -2 t/hour 0) ":" (format/pad -2 t/minute 0) ]) ]
+							parse cldat [ to "%T" remove thru "%T" insert (compose [ (format/pad -2 t/hour 0) ":" (format/pad -2 t/minute 0) ":" (format/pad -2 t/second 0) ]) ]
+							parse cldat [ to "%r" remove thru "%r" insert (compose [ (format/pad -2 (t/hour % 12) 0) ":" (format/pad -2 t/minute 0) ":" (format/pad -2 t/second 0) " " (either (t/hour > 12) ["PM"] ["AM"] ) ]) ]
+							o: copy cldat
+						]
+						if (m = "") and (sdfn or sdovr) [
+							parse csdat [ to "%Y" remove thru "%Y" insert (t/year - 2000) ]
+							parse csdat [ to "%y" remove thru "%y" insert (t/year) ]
+							parse csdat [ to "%m" remove thru "%m" insert (format/pad -2 t/month 0) ]
+							parse csdat [ to "%b" remove thru "%b" insert (pick smon t/month) ]
+							parse csdat [ to "%B" remove thru "%B" insert (pick mon t/month) ]
+							parse csdat [ to "%d" remove thru "%d" insert (format/pad -2 t/day 0) ]
+							parse csdat [ to "%e" remove thru "%e" insert (format/pad -2 t/day 0) ]
+							parse csdat [ to "%a" remove thru "%a" insert (pick swkd t/weekday) ]
+							parse csdat [ to "%A" remove thru "%A" insert (pick wkd t/weekday) ]
+							parse csdat [ to "%F" remove thru "%F" insert (compose [ (format/pad -2 t/year 0) "-" (format/pad -2 t/month 0) "-" (format/pad -2 t/day 0) ]) ]
+							o: copy csdat
+						]
+						o
+					)
+					remove thru ">"
+					:e remove thru "<"
+				] | skip
+			] to end
+		] ;[
+			;print l ;; just show lines with dates
+		;]
+	]
+	print l
+]
+#+END_SRC
+** result
+#+BEGIN_SRC text
+
+#+END_SRC
+* org links
+:PROPERTIES:
+:TYP: 5
+:FRZ: 0
+:HOI: 1
+:PUI: 1
+:LOD: (null)
+:PRE: ./presets/org_links.r3
+:LEX: (null)
+:CEX: rebol
+:REX: text
+:END:
+** code
+#+BEGIN_SRC rebol
+REBOL []
+;; replace org links with html links
+;; made for orgnqq
+;; by cpbrown 2022
+
+imgs: [ "gif" "jpg" "jpeg" "png" ]
+dw: charset [#"A" - #"Z" #"a" - #"z" #"0" - #"9"]
+dwh: charset [#"A" - #"Z" #"a" - #"z" #"0" - #"9" #":" #"/" #"." #"-" #"_" #"?" #"%" #"&"]
+
+amxmp: false
+ampre: false
+amsum: false
+amprop: false
+amcomment: false
+
+lines: read/lines to-file system/script/args
+foreach l lines [
+	hlink: copy ""
+	alt: copy ""
+	tbl: false
+	lnk: true
+	t: copy l
+	trim t
+
+;; block checks
+
+	if parse t [ to "<xmp" to end ] [ amxmp: true lnk: false ]
+	;;if parse t [ to "<pre" to end ] [ ampre: true lnk: false ]
+	if parse t [ to "<summary" to end ] [ amsum: true lnk: false ]
+	;if parse t [ to "<TR><TD class=^"propname^">" to end ] [ amprop: true lnk: false ]
+	if parse t [ to "</xmp" to end ] [ amxmp: false ]
+	;;if parse t [ to "</pre" to end ] [ ampre: false ]
+	if parse t [ to "</summary" to end ] [ amsum: false ]
+	;if parse t [ to "</TD>" to end ] [ amprop: false ]
+
+;; html comment
+;; this script doesn't handle multiline comments that start mid-line, 
+;; keep thes on their own line if possible
+	if parse t [ to "<!--" to end ] [ amcomment: true lnk: false ]
+	if parse t [ to "-->" to end ] [ amcomment: false ]
+
+;; org escape check
+	if t/1 = #"," [ lnk: false ]
+
+;; special case checks
+	if parse t [ [ "#+" | "<details" ] to end ] [ lnk: false ]
+
+	if lnk and (not amxmp) and (not amsum) and (not amcomment) [
+
+;; are we in a table?? do a rough check, refine if there's a link
+		tbl: parse l [ thru "|" to "|" to end ]
+;; is there a code block on the line?
+		;blk: parse l [ thru "~" to "~" to end ]
+
+		if parse l [thru "[[" to "]]" to end ] [
+			parse l [ s: any [
+				[ "~" thru "~"] | 
+				[ "<TR><TD class=^"propname^">" thru "</TD><TD>" ] |
+				[ 
+					;(print "check external link")
+					a:
+					"[["
+					b: 
+					some dwh "]["
+					:b
+					copy hlink to "][" 
+					thru "][" 
+					copy alt to "]]" 
+					( 
+						;print ["^-found external link:" alt hlink ]
+						hext: last split hlink "."
+						trim hext
+						nh: join "<a href=^"" [ hlink "^" target=^"new^">" ]
+						na: join "" [ alt "</a>" ]
+						if hext <> "" [
+							if (select imgs hext) <> none [
+								nh: join "<img src=^"" [ hlink "^"" ]
+								na: join " alt=^"" [ alt "^">" ]
+							]
+						]
+						if tbl [
+							if parse l [ to "|" to "[[" to "]]" to "|" to end ] [
+								nh: join "<a href=^"" [ hlink "^" target=^"new^">" ]
+								na: join "<span style=^"font-family: exacto;^">" [ alt "</span></a>" ]
+							]
+						]
+					)
+					:a remove thru "["
+					insert nh
+					insert na
+					remove thru "]]"
+					;(print [ "^-" nh na ])
+				] |
+				[
+					;(print "check local link")
+					c:
+					"[["
+					copy taglink to "]]"
+					(
+						;print [ "^-found local link:" taglink ]
+						tagname: copy taglink
+						replace taglink " " "_"
+						k: join "" [ "<span class=^"itag^"><a href=^"#" taglink "^" onclick=^"jto('" taglink "');^">" tagname "</a></span>" ]
+						if tbl [
+							if parse l [ to "|" to "[[" to "]]" to "|" to end ] [
+								k: join "" [ "<span style=^"font-family: exacto;^"><a href=^"#" taglink "^" onclick=^"jto('" taglink "');^">" tagname "</a></span>" ]
+							]
+						]
+						;print [ "^-" k ]
+					)
+					:c
+					remove thru "]]"
+					insert k
+				] |
+				skip
+			]]
+		]
+	]
+	print l
+]
+#+END_SRC
+** result
+#+BEGIN_SRC text
+
+#+END_SRC
+* org style
+:PROPERTIES:
+:TYP: 5
+:FRZ: 0
+:HOI: 1
+:PUI: 1
+:LOD: (null)
+:PRE: ./presets/org_style.r3
+:LEX: (null)
+:CEX: rebol
+:REX: text
+:END:
+** code
+#+BEGIN_SRC rebol
+REBOL []
+;; replace org style markers with html tags
+;; made for orgnqq
+;; by cpbrown 2022
+
+dw: charset [#"A" - #"Z" #"a" - #"z" #"0" - #"9"]
+cw: charset [
+	#" " 
+	#"^-" 
+	#"^/" 
+	#"(" 
+	#")" 
+	#"=" 
+	#"[" 
+	#"]" 
+	#"&" 
+	#";" 
+	#":" 
+	#"," 
+	#"." 
+	#"?" 
+	#"<" 
+	#">" 
+	#"/" 
+	#"+" 
+	#"_" 
+	#"*" 
+	#"~" 
+	#"'" 
+	#"^""
+]
+tt: [ "<i>" "</i>" ]
+bt: [ "<b>" "</b>" ]
+ut: [ "<u>" "</u>" ]
+st: [ "<s>" "</s>" ]
+qt: [ "^"" "^"" ]
+ct: [ "<span class=^"situ^">" "</span>" ]
+
+;; just check for pairs, don't change the line
+ispaired: function [ s x t ] [
+	haspair: false
+	h: x
+	if (s/:x = t) [
+		o: copy s
+		tbr: true
+;; don't include char-quotes within words like don't, also skip underlines inside words as they're often used to join strings
+		if ((t = #"'") or (t = #"_")) [
+			tbr: false
+			ee: s/(max (x - 1) 1)
+			nn: s/(min (x + 1) (length? s))
+;; acceptable word boundaries
+			tbr: ( 
+				(x = 1) or 
+				(ee = #" ") or 
+				(ee = #"^-") or 
+				(ee = #"(") or 
+				(ee = #"=") or 
+				(ee = #":") or
+				(ee = #">") or
+				(nn = #"<") or
+				(nn = #")") or
+				(nn = #";") or
+				(nn = #",") or
+				(nn = #".") or
+				(nn = #" ") or 
+				(nn = #"^-") or 
+				(x = (length? s))
+			)
+		]
+		if tbr [
+			y: 1
+			repeat r ((length? s) - x) [
+				obr: true
+				h: x + r
+;; skip if escaped
+				if (s/(max (h - 1) 0) <> #"\") [
+					if ((t = #"'") or (t = #"_")) [ 
+						obr: false
+						bb: s/(max (h - 1) 1)
+						ff: s/(min (h + 1) (length? s))
+						obr: (
+							(h = 1) or 
+							(bb = #" ") or 
+							(bb = #"^-") or 
+							(bb = #"(") or 
+							(bb = #"=") or 
+							(bb = #":") or
+							(bb = #">") or
+							(ff = #"<") or
+							(ff = #")") or
+							(ff = #";") or
+							(ff = #",") or
+							(ff = #".") or
+							(ff = #" ") or 
+							(ff = #"^-") or 
+							(ff = #"^/") or
+							(h = (length? s))
+						)
+					]
+					if s/(h) = t and obr [
+						m: ((y % 2) + 1)
+						if m = 2 [
+							haspair: true
+							break
+						]
+						y: y + 1
+					]
+				]
+			]
+		]
+	]
+	if not haspair [ h: x ]
+	compose reduce [ (haspair) (h) ]
+]
+
+;; check for pairs, inject tags if allgood
+injecttag: function [ s x t aa  ] [
+	o: copy s
+	haspair: false
+	tbr: true
+	h: 1
+	c: copy ""
+	if t = #"+" [
+;; don't dick with org tables...	
+		tbr: ((s/(max (x - 1) 1) <> #"-") and (s/(min (x + 1) (length? s)) <> #"-"))
+	]
+	if ((t = #"_") or (t = #"/")) [
+		tbr: false
+		mk: charset "/_"
+		bb: s/(max (x - 1) 1)
+		ff: s/(min (x + 1) (length? s))
+		seg: join bb [ s/:x ff ]
+		tbr: (
+			(x = 1) or 
+			(x = (length? s)) or
+			(parse seg [ not [dw mk dw] to end ])
+		)
+	]
+	if t = #"/" [ if (s/(max (x - 1) 1) = #"<") [ tbr: false ] ]
+	if (s/:x = t) and tbr [
+		y: 1
+;; look-ahead for a matching pair
+		repeat r ((length? s) - x) [
+			obr: true
+			h: x + r
+			c: join c s/:h
+;; skip if escaped
+			if (s/(max (h - 1) 1) <> #"\") [
+;; special case checks
+				if t = #"+" [ obr: ((s/(max (h - 1) 1) <> #"-") and (s/(min (h + 1) (length? s)) <> #"-")) ]
+				if ((t = #"_") or (t = #"/")) [
+					obr: false
+					mk: charset "/_"
+					bb: s/(max (h - 1) 1)
+					ff: s/(min (h + 1) (length? s))
+					seg: join bb [ s/:h ff ]
+					obr: (
+						(h = 1) or 
+						(h = (length? s)) or
+						(parse seg [ not [dw mk dw] to end ])
+					)
+				]
+				if t = #"/" [ if (s/(max (h - 1) 1) = #"<") [ obr: false ] ]
+				if obr [
+					if s/(h) = t [
+;; found it, use tag count for a modulo sanity check
+						m: ((y % 2) + 1)
+						if m = 2 [
+							take/last c
+							remove at o h
+							insert at o h aa/2
+							haspair: true
+							break
+						]
+						y: y + 1
+					]
+				]
+			]
+		]
+		if haspair = true [
+;; deal with html if in a code tag
+			either (t = #"~") [
+				replace/all c "&" "&amp;"
+				replace/all c "<" "&lt;"
+				replace/all c ">" "&gt;"
+				g: copy s
+				g: take/part g (x - 1)
+				k: copy s
+				k: take/last/part k ((length? s) - h)
+				;;print [ "HTML: " g aa/1 c aa/2 k ]
+				o: join g [ aa/1 c aa/2 k ]
+			] [
+;; insert the opening tag if a closing marker was found
+				remove at o x
+				insert at o x aa/1
+			]
+		]
+	]
+  o
+]
+
+lines: read/lines to-file system/script/args
+
+amxmp: false
+ampre: false
+amsum: false
+amprop: false
+amcomment: false
+
+foreach l lines [
+	notchar: true
+	notstring: true
+	notcode: true
+	syl: true
+	t: copy l
+	trim t
+
+;; block checks
+
+	if parse t [ to "<xmp" to end ] [ amxmp: true syl: false ]
+	if parse t [ to "<pre" to end ] [ ampre: true syl: false ]
+	if parse t [ to "<summary" to end ] [ amsum: true syl: false ]
+	if parse/case t [ to ":PROPERTIES:" to end ] [ amprop: true syl: false ]
+
+	if parse t [ to "</xmp" to end ] [ amxmp: false ]
+	if parse t [ to "</pre" to end ] [ ampre: false ]
+	if parse t [ to "</summary" to end ] [ amsum: false ]
+	if parse/case t [ to ":END:" to end ] [ amprop: false ]
+
+;; html comment
+;; this script doesn't handle multiline comments that start mid-line, 
+;; keep thes on their own line if possible
+	if parse t [ to "<!--" to end ] [ amcomment: true syl: false ]
+	if parse t [ to "-->" to end ] [ amcomment: false ]
+
+;; org escape check
+	if t/1 = #"," [ syl: false ]
+
+;; special case checks
+	if parse t [ [ "#+" | "<details" ] to end ] [ syl: false ]
+
+	o: copy ""
+	if syl and (not amxmp) and (not ampre) and (not amsum) and (not amprop) and (not amcomment) [
+		c: 1
+		while [c <= (length? l)] [
+;; skip escaped
+			if (l/(max (c - 1) 0) <> #"\") [
+
+;; quote: check if closed, move past closed
+				if (l/:c = #"^"") [
+					ip: ispaired l c #"^""
+					if ip/1 [
+						c: ip/2
+					]
+				]
+
+;; comma: check if closed, move past closed
+				if (l/:c = #"'") [
+					ip: ispaired l c #"'"
+					if ip/1 [
+						c: ip/2
+					]
+				]
+				
+;; inline code - we're double-handling to get a bool to exclude subsequent styling
+				if l/:c = #"~" [
+					ip: ispaired l c #"~"
+					j: injecttag l c #"~" ct l: j
+;; move to end of code + span
+					if ip/1 [ c: ( ip/2 + 24 ) ]
+				]
+				if notcode [
+;; underlines are an odd case as they're often used to avoid spaces in strings
+;; checking if its paired outside of a word, tags if true
+					if l/:c = #"_" [ j: injecttag l c #"_" ut l: j ]
+	;; italic - avoid closed tags, implied closed tags are unhandled '/>'
+					if (l/(max (c - 1) 0) <> #"<") [
+						if l/:c = #"/" [ j: injecttag l c #"/" tt l: j ]
+					]
+	;; the rest
+					if l/:c = #"*" [ j: injecttag l c #"*" bt l: j ]
+					if l/:c = #"+" [ j: injecttag l c #"+" st l: j ]
+				]
+			]
+			c: c + 1
+		]
+;; remove escapes before markup and quotes, this is post styling, so shouldn't be problematic...
+		parse l [ any [ to "\/" change "\/" "/" skip ] ]
+		parse l [ any [ to "\+" change "\+" "+" skip ] ]
+		parse l [ any [ to "\*" change "\*" "*" skip ] ]
+		parse l [ any [ to "\_" change "\_" "_" skip ] ]
+		parse l [ any [ to "\~" change "\~" "~" skip ] ]
+		parse l [ any [ to "\^"" change "\^"" "^"" skip ] ]
+		parse l [ any [ to "\'" change "\'" "'" skip ] ]
+		;print l
+	]
+	print l
+]
+#+END_SRC
+** result
+#+BEGIN_SRC text
+
+#+END_SRC
+* org include
+:PROPERTIES:
+:TYP: 5
+:FRZ: 0
+:HOI: 1
+:PUI: 0
+:LOD: (null)
+:PRE: ./presets/org_include.r3
+:LEX: (null)
+:CEX: rebol
+:REX: text
+:END:
+** code
+#+BEGIN_SRC rebol
+REBOL []
+;; script to replace org include with html embed
+;; made for orgnqq
+;; by cpbrown 2022
+
+lines: read/lines to-file system/script/args
+foreach l lines [
+	t: copy l
+	trim t
+	efile: copy ""
+	etype: copy ""
+	if parse t [ "#+INCLUDE:" thru "^"" copy efile to "^"" thru "src " copy etype to end ] [
+		l: join "<br><embed src=^"" [ efile "^" width=^"95%^" height=^"400^" type=^"text/plain^">" ]
+	]
+	print l
+]
+#+END_SRC
+** result
+#+BEGIN_SRC text
+
+#+END_SRC
+* linebreak content
+:PROPERTIES:
+:TYP: 5
+:FRZ: 0
+:HOI: 1
+:PUI: 1
+:LOD: (null)
+:PRE: ./presets/linebreaks.r3
+:LEX: (null)
+:CEX: rebol
+:REX: text
+:END:
+** code
+#+BEGIN_SRC rebol
+REBOL []
+;; insert <br> breaks at the end of each line of plaintext content
+;; css block white-space: pre accumulates linebreaks with lists
+;; so have to do it the hard way
+;;
+;; made for orgnqq
+;; by cpbrown 2022
+
+lines: read/lines to-file system/script/args
+
+amarticle: false
+amxmp: false
+ampre: false
+amul: false
+amol: false
+amtbl: false
+
+foreach l lines [
+	skipme: false 
+	if parse l [ to "</li>" to end ] [ skipme: true ]
+	if parse l [ to "class=^"cc^"" to end ] [ amarticle: true skipme: true]
+	if parse l [ to "<TABLE" to end ] [ amtbl: true skipme: true]
+	if parse l [ to "<xmp" to end ] [ amxmp: true skipme: true ]
+	if parse l [ to "<pre" to end ] [ ampre: true skipme: true ]
+	if parse l [ to "<ul>" to end ] [ amul: true skipme: true ]
+	if parse l [ to "<ol>" to end ] [ amol: true skipme: true ]
+	if parse l [ to "</div>" to end ] [ if amarticle [ amarticle: false skipme: true ] ]
+	if parse l [ to "</TABLE>" to end ] [ if amtbl [ amtbl: false skipme: true ] ]
+	if parse l [ to "</xmp" to end ] [ amxmp: false skipme: true ]
+	if parse l [ to "</pre" to end ] [ ampre: false skipme: true ]
+	if parse l [ to "</ul>" to end ] [ amul: false skipme: true ]
+	if parse l [ to "</ol>" to end ] [ amol: false skipme: true ]
+	if amarticle [
+		if (not amxmp) and (not ampre) and (not amul) and (not amol) and (not amtbl) and (not skipme) [
+			l: join l "<br>"
+		]
+	]
+	print l
+]
+#+END_SRC
+** result
+#+BEGIN_SRC text
+
+#+END_SRC
+* insert script
+:PROPERTIES:
+:TYP: 2
+:FRZ: 0
+:HOI: 1
+:PUI: 1
+:LOD: (null)
+:PRE: ./presets/insert_script.html
+:LEX: (null)
+:CEX: html
+:REX: text
+:END:
+** code
+#+BEGIN_SRC html
+<script>
+	// scripts for the orgnqq test site
+	// by cpbrown 2022
+	// may contain errors, use for reference only
+	//
+	// toggle details display, using a single tag only
+	// hate having to use js, but no other way to do it afik...
+	function tc(c,h) {
+		var e = document.getElementsByTagName('details');
+		var ub = false;
+		for(let i=0; i< e.length; i++){
+			if (e.className == c) {
+				e[i].style.display = 'block';
+			} else {
+				if (e[i].style.display == 'none') {
+					// something was hidden, unhide it all
+					ub = true;
+					break;
+				} else {
+					e[i].style.display = 'none';
+				}
+			}
+		}
+		// deal with parents
+		// ub = get all details elements and display them, fold everything
+		// not ub = get parents of element of class c (the selected tag), unhide and unfold them
+		if (ub) { g = document.getElementsByTagName('details'); } else { var g = document.getElementsByClassName(c); }
+		for(let i=0; i< g.length; i++){
+			pp = g[i];
+			while (pp != null) {
+				pp.style.display = 'block';
+				if (!ub) { 
+					if (pp.tagName == 'DETAILS') {
+						pp.open = true;
+					}
+				}
+				pp = pp.parentElement;
+			}
+		}
+		if (ub) {
+			var g = document.getElementsByTagName('details');
+			for(let i=0; i< g.length; i++){
+				g[i].open = false;
+			}
+			var m = document.getElementById(h);
+			var mm = m;
+			while (mm != null) {
+				mm.open = true;
+				mm = mm.parentElement;
+			}
+			m.scrollIntoView({behavior: "smooth", block: "start", inline: "center"});
+		}
+		return true;
+	}
+	// open target element and its parents, scroll to it
+	// replaces href="#id" as it doesn't work with closed <summary>
+	function jto(j) {
+		var g = document.getElementById(j);
+		if (g != null) {
+			var pp = g;
+			while (pp != null) {
+				pp.setAttribute('open', 'true');
+				pp = pp.parentElement;
+			}
+			g.scrollIntoView({behavior: "smooth", block: "start", inline: "center"});
+		}
+		return true;
+	}
+</script>
+</head>
+<body>
+<!--[lastres]-->
+#+END_SRC
+** result
+#+BEGIN_SRC text
+
+#+END_SRC
+* prepend css
+:PROPERTIES:
+:TYP: 2
+:FRZ: 0
+:HOI: 1
+:PUI: 1
+:LOD: (null)
+:PRE: ./presets/test_org_css.html
+:LEX: (null)
+:CEX: html
+:REX: html
+:END:
+** code
+#+BEGIN_SRC html
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.1//EN">
+<meta charset=utf-8>
+<HTML>
+<head>
+<title>reference notes</title>
+<meta name = "format-detection" content = "telephone=no"/>
+<meta name = "viewport" content = "width = device-width, initial-scale = 0.75, maximum-scale=2.0"/> 
+<!-- css for demo orgnqq site, by cpbrown 2022, may have errors; use as reference only-->
+<style type="text/css">
+	@font-face {
+		font-family: fhead;
+		font-size: 12pt;
+		src: url(heebo_variable.woff2);
+	}
+	@font-face {
+		font-family: article;
+		font-size: 12pt;
+		src: url(heebo_variable.woff2);
+	}
+	@font-face {
+		font-family: exacto;
+		font-size: 12pt;
+		src: url(jetbrainsmono.woff2);
+	}
+	body {
+		margin: 0;
+		padding: 20px;
+		height: auto;
+	}
+	div {
+		font-family: article;
+		font-size: clamp(14px,1.5vw,60px);
+		//font-weight: 900;
+		text-decoration: none;
+		text-align: left;
+		border-radius: 3px;
+		margin-top: 3px;
+		margin-bottom: 3px;
+		margin-left: 10px;
+		margin-right: 0px;
+		tab-size: 4;
+		text-shadow: 1px 1px 1px rgba(0,0,0,0.1), -1px -1px 1px rgba(0,0,0,0.1)
+	}
+	table {
+		max-width: 100%;
+		border-collapse: separate;
+		border-spacing: 5px;
+		//border-width: 2px;
+		//border-style: solid;
+		//border-color: #00000000;
+	}
+	td {
+		font-family: exacto;
+		padding-top: 5px;
+		padding-left: 10px;
+		padding-right: 10px;
+		padding-bottom: 5px;
+		text-align: left;
+		box-shadow: -1px -1px 1px rgba(200,200, 200, 0.5), 1px 1px 2px rgba(0,0,0,0.5);
+		mix-blend-mode: luminosity;
+	}
+	.cc {
+		padding: 20px;
+		color: inherit;
+		background: inherit;
+	}
+	.nn {
+		padding: 0px;
+		margin: 0px
+		color: inherit;
+		background: inherit; 
+	}
+	pre {
+		font-family: exacto;
+		font-size: clamp(5px,1.2vw,60px);
+		font-weight: 700;
+		text-decoration: none;
+		white-space:pre-wrap; 
+		word-wrap:break-word;
+		padding-top: 0px;
+		padding-left: 0px;
+		//-webkit-text-size-adjust: none;
+		//text-size-adjust: none;
+	}
+	xmp {
+		overflow: scroll;
+		max-height: 400px;
+		background-color: #00000033;
+		font-family: exacto;
+		font-size: clamp(5px,1.2vw,60px);
+		font-weight: 700;
+		tab-size: 4;
+		text-decoration: none;
+		white-space:pre-wrap; 
+		word-wrap:break-word;
+		padding-left: 20px;
+		padding-bottom: 10px;
+		//-webkit-text-size-adjust: none;
+		//text-size-adjust: none;
+	}
+	embed {
+		display: block;
+		font-family: exacto;
+		background-color: #FFFFFF44;
+		font-size: clamp(5px,1.2vw,60px);
+		font-weight: 700;
+		text-decoration: none;
+		white-space:pre-wrap; 
+		word-wrap:break-word;
+		tab-size: 4;
+		padding-left: 20px;
+		padding-bottom: 10px;
+		mix-blend-mode: luminosity;
+	}
+	.situ {
+		font-family: exacto;
+		font-size: inherit;
+		text-decoration: none;
+		background-color: #00000022;
+		padding-left: 5px;
+		padding-right: 5px;
+	}
+	.widetable {
+		font-family: exacto;
+		//font-size: clamp(5px,2.5vw,100px);
+		//font-size: 2.5vw;
+		padding-left: 20px;
+	}
+	a {
+		font-family: inherit;
+		color: inherit;
+		text-decoration: underline;
+		text-align: left;
+	}
+	summary {
+		font-family: fhead;
+		font-size: clamp(5px,3.5vw,30px);
+		font-weight: 900;
+		padding: 10px;
+		margin: 0px;
+		margin-top: 2px;
+		text-shadow: 1px 1px 1px rgba(200,200,200,0.2), -1px -1px 1px rgba(0,0,0,0.2);
+		box-shadow: -1px -1px 1px rgba(200,200, 200, 0.5), 1px 1px 2px rgba(0,0,0,0.5);
+	}
+	img {
+		//opacity: 0.8;
+		width: auto;
+		height: 75vh;
+		box-shadow: -1px -1px 1px rgba(200,200, 200, 0.3), 1px 1px 3px rgba(0,0,0,0.4);
+		mix-blend-mode: luminosity;
+	}
+	div.x { margin-left: 10px; font-size: 12pt; font-family: fhead; background: #00000000; opacity: 0.5; }
+	div.xs { margin-left: 10px; font-size: 12pt; font-family: fhead; background: #00000000; opacity: 0.5; }
+	summary, div {
+		color:#33CCEEFF;
+		mix-blend-mode: normal;
+	}
+	.itag {
+		text-decoration: underline;
+	}
+	.ttag {
+		font-family: exacto;
+		padding-right: 10px;
+	}
+	.ttag a {
+		text-decoration: none;
+		font-size: clamp(5px,1.5vw,60px);
+	}
+	.htag {
+		float: right;
+		padding-right: 10px;
+	}
+	.htag a {
+		text-decoration: none;
+		font-size: clamp(5px,1.5vw,30px);
+	}
+	.jumpto {
+		text-decoration: underline;
+		cursor: pointer;
+	}
+	body {
+		background: #112633;
+	}
+	summary.a { 
+		color: #50B2E6;
+		background: #285973EE;
+		box-shadow: -1px -1px 1px #50B2E6AA, 1px 1px 2px rgba(0,0,0,0.5);
+	}
+	summary.b { 
+		color:#67E6BB;
+		background: #2E6653EE;
+		box-shadow: -1px -1px 1px #67E6BB55, 1px 1px 2px rgba(0,0,0,0.5);
+	}
+	summary.c { 
+		color: #96E696;
+		background: #426642EE; 
+		box-shadow: -1px -1px 1px #96E69655, 1px 1px 2px rgba(0,0,0,0.5);		
+	}
+	summary.d { 
+		color: #C6E689;
+		background: #58663DEE;
+		box-shadow: -1px -1px 1px #C6E68955, 1px 1px 2px rgba(0,0,0,0.5);	
+	}
+	summary.e { 
+		color: #E6C47E;
+		background: #665738EE;
+		box-shadow: -1px -1px 1px #E6C47E55, 1px 1px 2px rgba(0,0,0,0.5);	
+	}
+	summary.f { 
+		color: #FF8C8C;
+		background: #804646EE;
+		box-shadow: -1px -1px 1px #FF8C8C77, 1px 1px 2px rgba(0,0,0,0.5);	
+	}
+	div.a {
+		color: #50B2E6;
+		background: #285973AA;
+		box-shadow: -1px -1px 1px #50B2E6AA, 1px 1px 2px rgba(0,0,0,0.5);	
+	}
+	div.b {
+		color:#67E6BB;
+		background: #2E6653AA;
+		box-shadow: -1px -1px 1px #67E6BB55, 1px 1px 2px rgba(0,0,0,0.5);	
+	}
+	div.c {
+		color: #96E696;
+		background: #426642AA; 
+		box-shadow: -1px -1px 1px #96E69655, 1px 1px 2px rgba(0,0,0,0.5);	
+	}
+	div.d {
+		color: #C6E689;
+		background: #58663DAA;
+		box-shadow: -1px -1px 1px #C6E68955, 1px 1px 2px rgba(0,0,0,0.5);		
+	}
+	div.e {
+		color: #E6C47E;
+		background: #665738AA;
+		box-shadow: -1px -1px 1px #E6C47E55, 1px 1px 2px rgba(0,0,0,0.5);		
+	}
+	div.f {
+		color: #FF8C8C;
+		background: #804646AA;
+		box-shadow: -1px -1px 1px #FF8C8C77, 1px 1px 2px rgba(0,0,0,0.5);		
+	}
+	b { font-weight: 900; }
+</style>
+<!--[lastres]-->
+#+END_SRC
+** result
+#+BEGIN_SRC html
+
+#+END_SRC
+* save html
+:PROPERTIES:
+:TYP: 1
+:FRZ: 0
+:HOI: 1
+:PUI: 1
+:LOD: ./output/test.html
+:PRE: (null)
+:LEX: html
+:CEX: sh
+:REX: html
+:END:
+** code
+#+BEGIN_SRC sh
+#+END_SRC
+** result
+#+BEGIN_SRC html
+
+#+END_SRC
+* publish site
+:PROPERTIES:
+:TYP: 6
+:FRZ: 0
+:HOI: 1
+:PUI: 1
+:LOD: (null)
+:PRE: ./presets/publish_test_org.sh
+:LEX: (null)
+:CEX: sh
+:REX: (null)
+:END:
+** code
+#+BEGIN_SRC sh
+#!bin/bash
+cp ./output/test.html /home/cpb/Downloads/pub/index.html
+cp -r ./presets /home/cpb/Downloads/pub/
+cp -r ./source /home/cpb/Downloads/pub/
+cp -r ./pub /home/cpb/Downloads/
+#+END_SRC
+** result
+#+BEGIN_SRC (null)
+
+#+END_SRC
