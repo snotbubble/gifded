@@ -1,0 +1,72 @@
+<script>
+	// scripts for the orgnqq test site
+	// by cpbrown 2022
+	// may contain errors, use for reference only
+	//
+	// toggle details display, using a single tag only
+	// hate having to use js, but no other way to do it afik...
+	function tc(c,h) {
+		var e = document.getElementsByTagName('details');
+		var ub = false;
+		for(let i=0; i< e.length; i++){
+			if (e.className == c) {
+				e[i].style.display = 'block';
+			} else {
+				if (e[i].style.display == 'none') {
+					// something was hidden, unhide it all
+					ub = true;
+					break;
+				} else {
+					e[i].style.display = 'none';
+				}
+			}
+		}
+		// deal with parents
+		// ub = get all details elements and display them, fold everything
+		// not ub = get parents of element of class c (the selected tag), unhide and unfold them
+		if (ub) { g = document.getElementsByTagName('details'); } else { var g = document.getElementsByClassName(c); }
+		for(let i=0; i< g.length; i++){
+			pp = g[i];
+			while (pp != null) {
+				pp.style.display = 'block';
+				if (!ub) { 
+					if (pp.tagName == 'DETAILS') {
+						pp.open = true;
+					}
+				}
+				pp = pp.parentElement;
+			}
+		}
+		if (ub) {
+			var g = document.getElementsByTagName('details');
+			for(let i=0; i< g.length; i++){
+				g[i].open = false;
+			}
+			var m = document.getElementById(h);
+			var mm = m;
+			while (mm != null) {
+				mm.open = true;
+				mm = mm.parentElement;
+			}
+			m.scrollIntoView({behavior: "smooth", block: "start", inline: "center"});
+		}
+		return true;
+	}
+	// open target element and its parents, scroll to it
+	// replaces href="#id" as it doesn't work with closed <summary>
+	function jto(j) {
+		var g = document.getElementById(j);
+		if (g != null) {
+			var pp = g;
+			while (pp != null) {
+				pp.setAttribute('open', 'true');
+				pp = pp.parentElement;
+			}
+			g.scrollIntoView({behavior: "smooth", block: "start", inline: "center"});
+		}
+		return true;
+	}
+</script>
+</head>
+<body>
+<!--[lastres]-->

@@ -1,0 +1,246 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.1//EN">
+<meta charset=utf-8>
+<HTML>
+<head>
+<title>reference notes</title>
+<meta name = "format-detection" content = "telephone=no"/>
+<meta name = "viewport" content = "width = device-width, initial-scale = 0.75, maximum-scale=2.0"/> 
+<!-- css for demo orgnqq site, by cpbrown 2022, may have errors; use as reference only-->
+<style type="text/css">
+	@font-face {
+		font-family: fhead;
+		font-size: 12pt;
+		src: url(heebo_variable.woff2);
+	}
+	@font-face {
+		font-family: article;
+		font-size: 12pt;
+		src: url(heebo_variable.woff2);
+	}
+	@font-face {
+		font-family: exacto;
+		font-size: 12pt;
+		src: url(jetbrainsmono.woff2);
+	}
+	body {
+		margin: 0;
+		padding: 20px;
+		height: auto;
+	}
+	div {
+		font-family: article;
+		font-size: clamp(14px,1.5vw,60px);
+		//font-weight: 900;
+		text-decoration: none;
+		text-align: left;
+		border-radius: 3px;
+		margin-top: 3px;
+		margin-bottom: 3px;
+		margin-left: 10px;
+		margin-right: 0px;
+		tab-size: 4;
+		text-shadow: 1px 1px 1px rgba(0,0,0,0.1), -1px -1px 1px rgba(0,0,0,0.1)
+	}
+	table {
+		max-width: 100%;
+		border-collapse: separate;
+		border-spacing: 5px;
+		//border-width: 2px;
+		//border-style: solid;
+		//border-color: #00000000;
+	}
+	td {
+		font-family: exacto;
+		padding-top: 5px;
+		padding-left: 10px;
+		padding-right: 10px;
+		padding-bottom: 5px;
+		text-align: left;
+		box-shadow: -1px -1px 1px rgba(200,200, 200, 0.5), 1px 1px 2px rgba(0,0,0,0.5);
+		mix-blend-mode: luminosity;
+	}
+	.cc {
+		padding: 20px;
+		color: inherit;
+		background: inherit;
+	}
+	.nn {
+		padding: 0px;
+		margin: 0px
+		color: inherit;
+		background: inherit; 
+	}
+	pre {
+		font-family: exacto;
+		font-size: clamp(5px,1.2vw,60px);
+		font-weight: 700;
+		text-decoration: none;
+		white-space:pre-wrap; 
+		word-wrap:break-word;
+		padding-top: 0px;
+		padding-left: 0px;
+		//-webkit-text-size-adjust: none;
+		//text-size-adjust: none;
+	}
+	xmp {
+		overflow: scroll;
+		max-height: 400px;
+		background-color: #00000033;
+		font-family: exacto;
+		font-size: clamp(5px,1.2vw,60px);
+		font-weight: 700;
+		tab-size: 4;
+		text-decoration: none;
+		white-space:pre-wrap; 
+		word-wrap:break-word;
+		padding-left: 20px;
+		padding-bottom: 10px;
+		//-webkit-text-size-adjust: none;
+		//text-size-adjust: none;
+	}
+	embed {
+		display: block;
+		font-family: exacto;
+		background-color: #FFFFFF44;
+		font-size: clamp(5px,1.2vw,60px);
+		font-weight: 700;
+		text-decoration: none;
+		white-space:pre-wrap; 
+		word-wrap:break-word;
+		tab-size: 4;
+		padding-left: 20px;
+		padding-bottom: 10px;
+		mix-blend-mode: luminosity;
+	}
+	.situ {
+		font-family: exacto;
+		font-size: inherit;
+		text-decoration: none;
+		background-color: #00000022;
+		padding-left: 5px;
+		padding-right: 5px;
+	}
+	.widetable {
+		font-family: exacto;
+		//font-size: clamp(5px,2.5vw,100px);
+		//font-size: 2.5vw;
+		padding-left: 20px;
+	}
+	a {
+		font-family: inherit;
+		color: inherit;
+		text-decoration: underline;
+		text-align: left;
+	}
+	summary {
+		font-family: fhead;
+		font-size: clamp(5px,3.5vw,30px);
+		font-weight: 900;
+		padding: 10px;
+		margin: 0px;
+		margin-top: 2px;
+		text-shadow: 1px 1px 1px rgba(200,200,200,0.2), -1px -1px 1px rgba(0,0,0,0.2);
+		box-shadow: -1px -1px 1px rgba(200,200, 200, 0.5), 1px 1px 2px rgba(0,0,0,0.5);
+	}
+	img {
+		//opacity: 0.8;
+		width: auto;
+		height: 75vh;
+		box-shadow: -1px -1px 1px rgba(200,200, 200, 0.3), 1px 1px 3px rgba(0,0,0,0.4);
+		mix-blend-mode: luminosity;
+	}
+	div.x { margin-left: 10px; font-size: 12pt; font-family: fhead; background: #00000000; opacity: 0.5; }
+	div.xs { margin-left: 10px; font-size: 12pt; font-family: fhead; background: #00000000; opacity: 0.5; }
+	summary, div {
+		color:#33CCEEFF;
+		mix-blend-mode: normal;
+	}
+	.itag {
+		text-decoration: underline;
+	}
+	.ttag {
+		font-family: exacto;
+		padding-right: 10px;
+	}
+	.ttag a {
+		text-decoration: none;
+		font-size: clamp(5px,1.5vw,60px);
+	}
+	.htag {
+		float: right;
+		padding-right: 10px;
+	}
+	.htag a {
+		text-decoration: none;
+		font-size: clamp(5px,1.5vw,30px);
+	}
+	.jumpto {
+		text-decoration: underline;
+		cursor: pointer;
+	}
+	body {
+		background: #112633;
+	}
+	summary.a { 
+		color: #50B2E6;
+		background: #285973EE;
+		box-shadow: -1px -1px 1px #50B2E6AA, 1px 1px 2px rgba(0,0,0,0.5);
+	}
+	summary.b { 
+		color:#67E6BB;
+		background: #2E6653EE;
+		box-shadow: -1px -1px 1px #67E6BB55, 1px 1px 2px rgba(0,0,0,0.5);
+	}
+	summary.c { 
+		color: #96E696;
+		background: #426642EE; 
+		box-shadow: -1px -1px 1px #96E69655, 1px 1px 2px rgba(0,0,0,0.5);		
+	}
+	summary.d { 
+		color: #C6E689;
+		background: #58663DEE;
+		box-shadow: -1px -1px 1px #C6E68955, 1px 1px 2px rgba(0,0,0,0.5);	
+	}
+	summary.e { 
+		color: #E6C47E;
+		background: #665738EE;
+		box-shadow: -1px -1px 1px #E6C47E55, 1px 1px 2px rgba(0,0,0,0.5);	
+	}
+	summary.f { 
+		color: #FF8C8C;
+		background: #804646EE;
+		box-shadow: -1px -1px 1px #FF8C8C77, 1px 1px 2px rgba(0,0,0,0.5);	
+	}
+	div.a {
+		color: #50B2E6;
+		background: #285973AA;
+		box-shadow: -1px -1px 1px #50B2E6AA, 1px 1px 2px rgba(0,0,0,0.5);	
+	}
+	div.b {
+		color:#67E6BB;
+		background: #2E6653AA;
+		box-shadow: -1px -1px 1px #67E6BB55, 1px 1px 2px rgba(0,0,0,0.5);	
+	}
+	div.c {
+		color: #96E696;
+		background: #426642AA; 
+		box-shadow: -1px -1px 1px #96E69655, 1px 1px 2px rgba(0,0,0,0.5);	
+	}
+	div.d {
+		color: #C6E689;
+		background: #58663DAA;
+		box-shadow: -1px -1px 1px #C6E68955, 1px 1px 2px rgba(0,0,0,0.5);		
+	}
+	div.e {
+		color: #E6C47E;
+		background: #665738AA;
+		box-shadow: -1px -1px 1px #E6C47E55, 1px 1px 2px rgba(0,0,0,0.5);		
+	}
+	div.f {
+		color: #FF8C8C;
+		background: #804646AA;
+		box-shadow: -1px -1px 1px #FF8C8C77, 1px 1px 2px rgba(0,0,0,0.5);		
+	}
+	b { font-weight: 900; }
+</style>
+<!--[lastres]-->
