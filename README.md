@@ -9,17 +9,10 @@ Get It Fucking Done EDitor
 - do not use this program, its here for demonstration purposes only
 
 # testing
-- copy contents of install to home, to get syntax highlighting for Rebol & Org
-- grab a release of [Rebol3](https://github.com/Oldes/Rebol3/releases/tag/3.9.0), copy to your project dir, rename it to `r3`  
-
-
-- download gifded to the project dir and run `./gifded`
-- install whatever the above complains about until it works  
-
-
-- or: download gifded.vala to the project dir and run `clear && valac gifded.vala --pkg gtk4 --pkg gtksourceview-5 -X -lm`
-- install whatever the above complains about until it works
-- run `./gifded`
+- extract install `lz4 -d install.tar.lz4 | tar xvf -`, copy `.local` to to home
+- get [Rebol3](https://github.com/Oldes/Rebol3/releases/tag/3.9.0), copy to project dir, rename it to `r3`  
+- copy gifded.vala to the project dir, run `clear && valac gifded.vala --pkg gtk4 --pkg gtksourceview-5 -X -lm`
+- install whatever the above complains about until it works, probably: valac, gcc, gtk4-dev, gtksourceview5
 
 # screenie
 ![screenie](./screenies/220828_gifded_screenie.png)
