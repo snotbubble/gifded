@@ -1,0 +1,672 @@
+# -*- mode: org; -*- 
+#+STARTUP: indent overview align
+#+OPTIONS: toc:nil num:nil title:nil \n:t author:nil ::nil H:1 f:nil 
+#+TITLE: test.org
+#+AUTHOR: c.p.brown
+#+SUBTITLE: Break orgqq. I release when the TODOs are gone
+#+TODO: [2_FIX.] [0_TODO] [1_IP..] [3_WAIT] [4_NOPE] [5_DONE]
+
+* note
+Made for a specific documentation site.
+
+Embeds don't work on Github pages, I suspect the server actually knows what an r3 file is and is not letting it load as text/plain.
+
+Converter was re-written in [[https://github.com/Oldes/Rebol3][Rebol3]] using a custom script queue that assembles inefficient code.
+Rebol3 isn't compilable (AFIK) so no exe; I still need the r3 interpreter, but its less than 1mb.
+the pros vs Python (& this is totally subjective):
+- less verbose; faster to write
+- slightly less fussy syntax
+- parse is more flexible than regex (when you get used to how weird it is)
+- file i/o is simple, like: ~write %./test.txt take/last read/lines %./file.txt~
+- while not a compiler, the interpreter is small enough to copy to each project
+- execution speed should be similar to Python
+- no need to import modules
+the cons:
+- no string/list slicing, have to use parse or get fancy with take and remove
+- lack of modules (like Pandas, etree) means doing everything from scratch, but you learn more
+- no ui or renderer, not even 3rd party
+- can't copy files without loading into memory
+Help and docs are great for both, unlike Vala...
+
+
+The [[https://github.com/snotbubble/orgnqq/blob/master/220807_orgnqq_ui_screenie.png][script queue]] was useful but unnecessary; could do it with includes, or just manage one huge script, which is how I normally prefer to work. Regardless, it was useful training and I'll probably still use it as a chop-shop.
+
+* [5_DONE] title
+** [5_DONE] title parser                                        :sourcecode:
+Source for org to html title parsing, written with [[https://github.com/Oldes/Rebol3][Rebol3]]
+Using ~#+INCLUDE: "./presets/org_title.r3" src rebol~ to ~<embed>~ this file.
+#+INCLUDE: "./presets/org_title.r3" src rebol
+* [2_FIX.] headlines
+- [ ] try to stop closing headlines from scrolling out from under the mouse
+** [5_DONE] todos [3/3]
+- [X] read todo config in orgfile 1st-line if present, use it to:
+  - [X] color todos in a gradient: red -> green
+- [X] make todos a filter, same as tags
+- [X] ignore todos when setting ids
+** [2_FIX.] tags
+*** [5_DONE] multiple tags                                       :tag:link:
+- [X] detect and break up chained org tags
+- [X] set html #ids to multiple tags for the filter js function: trim head and trail colons, then delimit by colon
+
+*** [0_TODO] exclude noexport                                         :tag:
+- [ ] include all sub-items
+
+** [5_DONE] headline parser                                     :sourcecode:
+Source for org to html headline parsing, written with [[https://github.com/Oldes/Rebol3][Rebol3]]
+includes: indentation, tags and todos.
+Using ~#+INCLUDE: "./presets/org_headlines.r3" src rebol~ to ~<embed>~ this file.
+#+INCLUDE: "./presets/org_headlines.r3" src rebol
+* [5_DONE] links
+** [5_DONE] internal link [4/4]
+- [X] detect link-close before : ~, . ; ) <~
+- [X] detect and ignore todos
+- [X] fix style inheritance
+- [X] exclude checkbox totals from target ids
+
+this should ignore [[todos]]:
+a link to [[malformed list]] 
+** [5_DONE] links in list                                        :link:list:
+1. [[https://www.github.com/snotbubble/orgnqq][link in list]]
+2. TWO
+3. THREE
+** [5_DONE] link in table                                       :link:table:
+#+BEGIN_TABLE
+| item  | qty |   sub | url           |
+|-------+-----+-------+---------------|
+| ONE   |   2 |  33.8 | [[https://www.github.com/snotbubble/orgnqq][link in table]] |
+| TWO   |   5 | 46.25 |               |
+| THREE |   1 | 86.95 |               |
+|-------+-----+-------+---------------|
+|       |     |       |               |
+#+END_TABLE
+** [5_DONE] links in checkboxes                                 :link:check:
+- [ ] this is [[checkboxes]]
+- [ ] this is [[https://www.github.com/snotbubble/orgnqq][orgnqq]]
+** [5_DONE] multiple links                                      :link:table:
+one: [[http://www.github.com/snotbubble/orgnqq][some site]], two: [[http://www.github.com/snotbubble/orgnqq][some site]], three: [[dates]] four: [[http://www.github.com/snotbubble/orgnqq][some site]]
+#+BEGIN_TABLE
+| link1     | link2     | link3     |
+|-----------+-----------+-----------|
+| [[http://www.github.com/snotbubble/orgnqq][some site]] | [[todos]]     | [[http://www.github.com/snotbubble/orgnqq][some site]] |
+| [[content]]   | [[http://www.github.com/snotbubble/orgnqq][some site]] | [[styling]]   |
+|-----------+-----------+-----------|
+#+END_TABLE
+** [5_DONE] no links
+block link tag injection in verbatim text
+*** [5_DONE] no link in property name                     :link:properties:
+#+ATTR_ORG: prop: t
+:PROPERTIES:
+:[[links]]: this shouldn't be here
+:[[http://www.github.com/snotbubble/orgnqq][some site]]:   also bad
+:LINK: but this is OK: [[http://www.github.com/snotbubble/orgnqq][some site]]
+:JUMP: also this: [[links]]
+:END:
+*** [5_DONE] no links in xmp
+#+BEGIN_SRC rebol
+read: [[http://www.github.com/snotbubble/orgnqq][some site]]
+#+END_SRC
+*** [5_DONE] no links in inline blocks                         :link:style:
+~read: [[http://www.github.com/snotbubble/orgnqq][some site]]~ and also read: [[tags]], but not ~[[empties]]~... oh and [[http://www.github.com/snotbubble/orgnqq][some site]]
+** [5_DONE] link parser                                         :sourcecode:
+Source for org to html link parsing, written with [[https://github.com/Oldes/Rebol3][Rebol3]]
+Using ~#+INCLUDE: "./presets/org_links.r3" src rebol~ to ~<embed>~ this file.
+#+INCLUDE: "./presets/org_links.r3" src rebol
+* [5_DONE] styling                                                    :style:
+- [X] handle `inline code`
+- [X] finish and test styling combos
+- [X] exclude property bin item labels
+- [X] skip underscores inside alphanumeric words: dont_underscore033_this01_003
+- [X] escape html in '~org code~'
+- [X] fix '<' breaking quote closure
+- [X] skip forwardslash in words: don't emphasize/italicize/alter this...
+
+*bold*
+/italic/
+_underline_
++strikethrough+
+~org inline code~
+** [5_DONE] howabout a style workout                                 :style:
+- [X] finish styling examples
+- [X] fix multiple bold pairs on one line
+- [X] for char-quotes, only escape between [\d\w]\'[\d\w][\d\w\s]+[\d\w]\'[\d\w]
+- [X] remove escape char before markup and quotes
+
+This works:
+/italian/ for (/emphasis/), or snark, /somethimes/.
+*i'm not panicking* (*just worried*), about the *underlines*.
+_u think ur worried,_ what about the _/snark/_ ruining (_justabout_) _everything_.
+~/whatever man/ just _print it_.~
+
+This does not:
++I have no regrets+, just x+y +/z+ um just not +(lerning)+learning /+all teh+ the/ nums +and shit+
+#+BEGIN_SRC sh
++I have no regrets+, just x+y +/z+ um just not +(lerning)+learning /+all teh+ the/ nums +and shit+
+#+END_SRC
+to fix, escape the 1st '/'
+#+BEGIN_SRC sh
++I have no regrets+, just x\+y +\/z+ um just not +(lerning)+learning +/all teh+ the/ nums +and shit+
+#+END_SRC
++I have no regrets+, just x\+y +\/z+ um just not +(lerning)+learning +/all teh+ the/ nums +and shit+
+
+*** nesting:
+~'/quote/'~ '/quote/'
+~/'quote'/~ /'quote'/
+
+~'\~code\~'~ '~code~'
+~\~'code'\~~ ~'code'~
+~/\~code\~/~ /~code~/
+~\~/code/\~~ ~/code/~
+
+'~more code~'
+~'\~more code\~'~
+
+<b>'~more code~'</b>
+~<b>'\~more code\~'</b>~
+
+~'more code'~
+~\~'more code'\~~
+
+/~more code~/
+~/\~more code\~/~
+
+~/more code/~
+~\~/more code/\~~
+
+- [ ] '~more code~'
+- [ ] ~'more code'~
+- [ ] /~more code~/
+- [ ] ~/more code/~
+
+
+~_/under_line/_~ _/under_line/_
+~/_under_line_/~ /_under_line_/
+~'_under_line_'~ '_under_line_'
+~_'under_line'_~ _'under_line'_
+~\~_under_line_\~~ ~_under_line_~
+~_\~under_line\~_~ _~under_line~_
+~'\~_under_line_\~'~ '~_under_line_~'
+~\~'_under_line_'\~~ ~'_under_line_'~
+~_\~'under_line'\~_~ _~'under_line'~_
+~_'\~under_lne\~'_~ _'~under_lne~'_
+
+**** style vs quotes:
+don't /style/ or this'll look odd
+my href *"doesn't/want/any/trouble"*
+what does _15"_ /mean/ anyways?
+one-shot the escapes: ~a+b*c+d/e*f/g~
+but 'not in ~/the char quotes/~ or' "string ~*quotes*~ ..." 
+
+***** now for the edgelords:
+'werd ~x+y/z+a*b/c*d~
+off 'by *one*'s are+' a pain+
+in '+ the' ass+
+don't close the ~</div> & </details>~ just yet
+"a messy('function_call()',in);" a ~'function_call()'~
+was '/going/ to quip\' but 
+youknow what: i'll "/quip/\"
+" 'three:`thirty' _" five`_
+~decipher "all '/the strings/' within_strings"~
+
+** [5_DONE] style parser                                        :sourcecode:
+Source for org to html style parsing, written with [[https://github.com/Oldes/Rebol3][Rebol3]]
+Using ~#+INCLUDE: "./presets/org_style.r3" src rebol~ to ~<embed>~ this file.
+#+INCLUDE: "./presets/org_style.r3" src rebol
+* [5_DONE] property bin                                          :properties:
+:PROPERTIES:
+:NOTE: we shouldn't see this
+:EXPORT_FILE_NAME: ./testbin
+:END:
+the property bin above should be hidden
+** [5_DONE] unhidden property bin                               :properties:
+#+ATTR_ORG: prop: t
+:PROPERTIES:
+:NOTE: we should see this
+:EXPORT_FILE_NAME: ./testbin
+:END:
+- [X] use ~attr_org prop: t~ to show them
+** [5_DONE] property parser                                     :sourcecode:
+Source for org to html property parsing, written with [[https://github.com/Oldes/Rebol3][Rebol3]]
+Using ~#+INCLUDE: "./presets/org_properties.r3" src rebol~ to ~<embed>~ this file.
+#+INCLUDE: "./presets/org_properties.r3" src rebol
+* [1_IP..] tables
+- [ ] add headline option to hide tblfn
+- [ ] escape ~<r>~ in org-plot header
+** [5_DONE] simple table                                             :table:
+#+BEGIN_TABLE
+| a | table | goes | here |
+|---+-------+------+------|
+| 1 |     2 |    3 |    6 |
+|---+-------+------+------|
+#+TBLFM: $4=vsum($1..$3)
+#+END_TABLE
+** [5_DONE] plot table                                               :table:
+#+BEGIN_TABLE
+| temp c | temp f |   fn | plot                 | note       |
+|--------+--------+------+----------------------+------------|
+|    0.0 |   32.0 | 0.00 |                      |            |
+|    2.0 |   35.6 | 0.00 |                      |            |
+|    4.0 |   39.2 | 0.01 | ▎                    |            |
+|    6.0 |   42.8 | 0.01 | ▎                    |            |
+|    8.0 |   46.4 | 0.02 | ▍                    |            |
+|   10.0 |   50.0 | 0.03 | ▋                    |            |
+|   12.0 |   53.6 | 0.05 | █                    | <- heater  |
+|   14.0 |   57.2 | 0.08 | █▋                   |            |
+|   16.0 |   60.8 | 0.14 | ██▊                  | <- coat    |
+|   18.0 |   64.4 | 0.22 | ████▍                |            |
+|   20.0 |   68.0 | 0.33 | ██████▋              |            |
+|   22.0 |   71.6 | 0.46 | █████████▎           | <- perfect |
+|   24.0 |   75.2 | 0.61 | ████████████▎        |            |
+|   26.0 |   78.8 | 0.73 | ██████████████▋      |            |
+|   28.0 |   82.4 | 0.83 | ████████████████▋    | <- fan     |
+|   30.0 |   86.0 | 0.89 | █████████████████▊   |            |
+|   32.0 |   89.6 | 0.94 | ██████████████████▊  | <- aircon  |
+|   34.0 |   93.2 | 0.96 | ███████████████████▎ |            |
+|   36.0 |   96.8 | 0.98 | ███████████████████▋ |            |
+|   38.0 |  100.4 | 0.99 | ███████████████████▊ |            |
+|   40.0 |  104.0 | 0.99 | ███████████████████▊ |            |
+|   42.0 |  107.6 | 1.00 | ████████████████████ |            |
+|   44.0 |  111.2 | 1.00 | ████████████████████ |            |
+|--------+--------+------+----------------------+------------|
+#+TBLFM: $2=(($1*1.8)+32);%.1f :: $3=(1/(1+exp(-($1-(0.0 + ((50.0/10.0)*4.5)))/(50.0/10.0)*0.7)));%.2f :: $4='(orgtbl-uc-draw-cont $3 0.0 1.0 20) 
+#+END_TABLE
+*** mono fonts vs plot                                              :table:
+#+BEGIN_TABLE
+| font                 | blockchar       | note                                              | use      |
+|----------------------+-----------------+---------------------------------------------------+----------|
+| typewriter condensed | blocks not mono | clean, narrow, vertical gaps                      |          |
+| forensic             | horribly broken | horribly broken                                   |          |
+| flexi ibm vga        | not mono        | narrow, dense, vertical gaps                      |          |
+| inconsolata regular  | mono            | clean, slightly wide, slight vertical gaps        | fallback |
+| jetbrainsmono        | mono            | clean, text slightly narrow, slight vertical gaps | yes      |
+|                      |                 |                                                   |          |
+#+END_TABLE
+** [5_DONE] ultra wide table                                         :table:
+- [X] set font size range using line character length
+#+BEGIN_TABLE
+| 1ITM |   2BBB |    3CCC |       4DDD |       5EEE | 6FFF | 7GGG | 8HHH | 9III | 10JJJ |      11KKK |    12LLL |      13MMM |      14NNN |
+|------+--------+---------+------------+------------+------+------+------+------+-------+------------+----------+------------+------------|
+| ONE  | 300000 |  900000 |     100000 |  800000.00 | 0.97 | 0.98 |  0.0 | 0.51 | 20000 |  737540.00 |    13.56 |  695000.00 |  855540.00 |
+| TWO  | 200000 |  100000 |     100000 |       0.00 | 0.97 |  1.0 |  0.0 | 0.51 |  5000 |   -8000.00 | -1250.00 | 1440540.00 |   97000.00 |
+| TRE  | 600000 |  800000 |     400000 |  400000.00 | 0.97 |  1.0 |  0.0 | 0.51 | 20000 |  356000.00 |   112.36 |  776540.00 |  776000.00 |
+| FOR  | 800000 | 1100000 |     600000 |  500000.00 | 0.97 |  1.0 |  0.0 | 0.51 | 20000 |  447000.00 |   134.23 |  485540.00 | 1067000.00 |
+|------+--------+---------+------------+------------+------+------+------+------+-------+------------+----------+------------+------------|
+|      |        |         | 1200000.00 | 1700000.00 |      |      |      |      |       | 1532540.00 |    78.30 |            |            |
+#+TBLFM: $5=($3-$4);%.2f :: $11=( (((($3*$6) - $4)*$7) - max((($3-$2)*($8*$9)),0.0)) - $10);%.2f :: $12=($4/$11)*100.0;%.2f :: @>$4=vsum(@I$4..@II$4);%.2f :: @>$5=vsum(@I$5..@II$5);%.2f :: @>$11=vsum(@I$11..@II$11);%.2f :: @>$12=(@>$4/@>$11)*100.0;%.2f :: $13=((vsum(@I$11..@II$11)-$11)-$4);%.2f :: @>$13=(string("")) :: $14=((($3*$6)*$7)-max((($3-$2)*($8*$9)),0.0));%.2f :: @>$14=(string(""))
+#+END_TABLE
+** [5_DONE] subtotal table                                      :table:link:
+#+BEGIN_TABLE
+#+tblname: with-rownames
+| !     | DESCRIPTION   |       SUB |
+|-------+---------------+-----------|
+| AAA02 | ideas         |  12340.56 |
+| BBB15 | words         |  56780.90 |
+| CCC35 | [[source code]]   |  12340.00 |
+| CCC39 | actions       |  56780.00 |
+| CCC40 | actions       |   9100.00 |
+|-------+---------------+-----------|
+|       | 147341.46     |           |
+| ^     | income_total  |           |
+|-------+---------------+-----------|
+| OFCIE | screen        |  -1230.00 |
+| TOOLS | wares         |  -4560.00 |
+| TOOLS | more wares    |   -789.62 |
+| COMMS | newphone      |  -1000.74 |
+|-------+---------------+-----------|
+|       | -7580.36      |           |
+| ^     | expense_total |           |
+|-------+---------------+-----------|
+| TOTAL |               | 139761.10 |
+| %     |               |      95.6 |
+#+TBLFM: @1$1=string("!") :: @1$2=string("DESCRIPTION") ::  $income_total=vsum(@I$SUB..@II$SUB);%.2f :: $expense_total=vsum(@III$SUB..@IIII$SUB)  :: @>>$3=vsum(@I$SUB..@IIII$SUB);%.2f ::  @>$3=(1.0 - (abs(@IIII$2) / @II$2)) * 100.0;%.1f
+#+END_TABLE
+** [5_DONE] columnviews                                              :table:
+escaped using BEGIN_EXAMPLE and comma before asterisk:
+#+BEGIN_EXAMPLE
+,* alist
+  :PROPERTIES:
+  :COLUMNS: %ITM %COS %QTY
+  :END:
+
+,** anitem
+   :PROPERTIES:
+   :ITM: one
+   :COS: 34.80
+   :QTY: 3
+   :URL: storepage.com/one
+   :END:
+
+,** anotheritem
+   :PROPERTIES:
+   :ITM: two
+   :COS: 7.50
+   :QTY: 12
+   :URL: storepage.com/two
+   :END:
+
+,** lastitem
+   :PROPERTIES:
+   :ITM: three
+   :COS: 68.00
+   :QTY: 8
+   :URL: storepage.com/three
+   :END:
+
+,** line
+   :PROPERTIES:
+   :ITM: -
+   :COS:
+   :QTY:
+   :URL:
+   :END:
+
+,** total
+   :PROPERTIES:
+   :ITM: Total
+   :COS:
+   :QTY:
+   :URL:
+   :END:
+
+,** table
+   #+BEGIN: columnview :id local :skip-empty-rows t
+   | ITM   |   COS |   QTY |
+   |-------+-------+-------|
+   | one   | 34.80 |     3 |
+   | two   |  7.50 |    12 |
+   | three | 68.00 |     8 |
+   |-------+-------+-------|
+   | Total |       | 23.00 |
+   #+TBLFM: @>$3=vsum(@I$3..@II$3);%.2f
+   #+END
+#+END_EXAMPLE
+*** [5_DONE] columnview table - real
+#+ATTR_ORG: prop: t
+  :PROPERTIES:
+  :COLUMNS: %ITM %COS %QTY
+  :END:
+- [X] put columnview (summary below) into a pre block
+**** anitem                                                        :properties:
+#+ATTR_ORG: prop: t
+   :PROPERTIES:
+   :ITM: one
+   :COS: 34.80
+   :QTY: 3
+   :URL: storepage.com/one
+   :END:
+
+**** anotheritem                                                   :properties:
+#+ATTR_ORG: prop: t
+   :PROPERTIES:
+   :ITM: two
+   :COS: 7.50
+   :QTY: 12
+   :URL: storepage.com/two
+   :END:
+
+**** lastitem                                                      :properties:
+#+ATTR_ORG: prop: t
+   :PROPERTIES:
+   :ITM: three
+   :COS: 68.00
+   :QTY: 8
+   :URL: storepage.com/three
+   :END:
+
+**** line                                                          :properties:
+#+ATTR_ORG: prop: t
+   :PROPERTIES:
+   :ITM: -
+   :COS:
+   :QTY:
+   :URL:
+   :END:
+
+**** total                                                         :properties:
+#+ATTR_ORG: prop: t
+   :PROPERTIES:
+   :ITM: Total
+   :COS:
+   :QTY:
+   :URL:
+   :END:
+
+**** summary                                                       :table:
+   #+BEGIN: columnview :id local :skip-empty-rows t
+   | ITM   |   COS |   QTY |
+   |-------+-------+-------|
+   | one   | 34.80 |     3 |
+   | two   |  7.50 |    12 |
+   | three | 68.00 |     8 |
+   |-------+-------+-------|
+   | Total |       | 23.00 |
+   #+TBLFM: @>$3=vsum(@I$3..@II$3);%.2f
+   #+END
+** [5_DONE] table parser                                        :sourcecode:
+Source for org to html table parsing, written with [[https://github.com/Oldes/Rebol3][Rebol3]]
+Using ~#+INCLUDE: "./presets/org_tables.r3" src rebol~ to ~<embed>~ this file.
+#+INCLUDE: "./presets/org_tables.r3" src rebol
+* [5_DONE] checkboxes [2/2]                                           :check:
+- [X] fix hidden headline when check totals are present
+- [X] remove check formatting from xmp
+** [5_DONE] checkbox parser                                     :sourcecode:
+Source for org to html checkbox parsing, written with [[https://github.com/Oldes/Rebol3][Rebol3]]
+Using ~#+INCLUDE: "./presets/org_checkboxes.r3" src rebol~ to ~<embed>~ this file.
+#+INCLUDE: "./presets/org_checkboxes.r3" src rebol
+* [5_DONE] dates                                                      :date:
+- [X] use date format override in orgfile settings
+- [X] use date format override after attr_org setting
+use this in the top line of the orgfile, after ~mode: org;~, to do per-file override:
+~org-time-stamp-custom-formats: ("<%y%m%d>" . "<%y%m%d%H%M>");~
+
+use this to do per-article overrides:
+~#+ATTR_ORG: org-time-stamp-custom-formats: ("<%A, %d %B %Y>" . "<%A, %d %B %Y, %I:%M %p>")~
+the override is broken at the next ~</div>~ and will fall back to the file override, or failing that, the default:
+<2022-08-22 Mon 11:30>
+
+defaults to long-date format:
+<2022-08-22 Mon 08:48>
+** [5_DONE] dates in tables                                     :date:table:
+no date reformatting in tables:
+#+BEGIN_TABLE
+|----------------------------------------+-------------------|
+| <2022-06-01>--<2022-06-13>             | 12 days           |
+| <2022-02-20 16:00>--<2022-08-08 09:00> | 168 days 18 hours |
+|----------------------------------------+-------------------|
+#+TBLFM: $2='(org-evaluate-time-range)
+#+END_TABLE
+test multiple:
+<2022-07-18> (<2022-01-03 Mon 13:34>) <2022-09-12 Mon 09:20>, <2022-08-23 Tue>
+** [5_DONE] date sequence                                             :date:
+test the whiggles:
+<2022-08-01 Mon>
+<2022-08-02 Tue>
+<2022-08-03 Wed>
+<2022-08-04 Thu>
+<2022-08-05 Fri>
+<2022-08-06 Sat>
+<2022-08-07 Sun>
+<2022-08-08 Mon>
+<2022-08-09 Tue>
+<2022-08-10 Wed>
+<2022-08-11 Thu>
+<2022-08-12 Fri>
+<2022-08-13 Sat>
+<2022-08-14 Sun>
+<2022-08-15 Mon>
+<2022-08-16 Tue>
+<2022-08-17 Wed>
+<2022-08-18 Thu>
+<2022-08-19 Fri>
+<2022-08-20 Sat>
+<2022-08-21 Sun>
+<2022-08-22 Mon>
+<2022-08-23 Tue>
+<2022-08-24 Wed>
+<2022-08-25 Thu>
+<2022-08-26 Fri>
+<2022-08-27 Sat>
+<2022-08-28 Sun>
+<2022-08-29 Mon>
+<2022-08-30 Tue>
+<2022-08-31 Wed> 
+** [5_DONE] dates in checks                                     :date:check:
+- [ ] next <2022-11-12 Sat>
+- [X] done <2022-05-02 Mon>
+** [5_DONE] dates in list                                        :date:list:
+- <2022-07-21 Thu>
+- <2022-08-15 Mon>
+  1. <2022-08-15 Mon 09:30>
+  2. <2022-08-15 Mon 10:45>
+- <2022-08-24>
+** [5_DONE] date format override                                      :date:
+#+ATTR_ORG: org-time-stamp-custom-formats: ("<%A, %d %B %Y>" . "<%A, %d %B %Y, %I:%M %p>")
+using ~#+ATTR_ORG: org-time-stamp-custom-formats: ("<%A, %d %B %Y>" . "<%A, %d %B %Y, %I:%M %p>")~
+probably incorrect for org, but the converter can still detect and use it.
+- <2022-08-22 Mon 8:45>
+- <2022-08-27>
+- <2022-08-25 18:37:25>
+** [5_DONE] date parser                                         :sourcecode:
+Source for org to html date parsing, written with [[https://github.com/Oldes/Rebol3][Rebol3]]
+Using ~#+INCLUDE: "./presets/org_dates.r3" src rebol~ to ~<embed>~ this file.
+#+INCLUDE: "./presets/org_dates.r3" src rebol
+* [5_DONE] source code                                                 :link:
+here's some code:
+[[https://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm][source]] (iquilezles.org)
+#+BEGIN_SRC glsl
+float sdfbox(vec3 pos, vec3 size) {
+    pos = abs(pos)-size;
+    return length(max(pos, 0.0)) + min( max(pos.x, max(pos.y, pos.z)), 0.0);
+}
+#+END_SRC
+** [5_DONE] source parser                                       :sourcecode:
+Source for org to html source parsing, written with [[https://github.com/Oldes/Rebol3][Rebol3]]
+Using ~#+INCLUDE: "./presets/org_source.r3" src rebol~ to ~<embed>~ this file.
+#+INCLUDE: "./presets/org_source.r3" src rebol
+* [2_FIX.] embedded
+** [5_DONE] picture                                                   :link:
+...and here's a piggy-bird:
+[[./this_is_my_pond.gif][this is my pond]]
+Look how fat it is.
+** [2_FIX.] file
+- [X] Use ~#+INCLUDE: "./presets/org_links.r3" src rebol~ to ~<embed>~
+- [ ] Find out why remote r3 files aren't being loaded
+*** [4_NOPE] style embed
+can't be done without altering the source file
+** [5_DONE] embed parser                                        :sourcecode:
+Source for org to html embed parsing, written with [[https://github.com/Oldes/Rebol3][Rebol3]]
+Only used for org include, images use standard img tag
+Using ~#+INCLUDE: "./presets/org_include.r3" src rebol~ to ~<embed>~ this file.
+#+INCLUDE: "./presets/org_include.r3" src rebol
+* [4_NOPE] empties
+this is a nope, unless it can be done without a pre-pass search...
+* [5_DONE] lists
+** [5_DONE] a broken list                                             :list:
+- listitem
+-
+- another listitem
+-
+-
+** [5_DONE] nested list                                               :list:
+- one
+  - one_a
+  - one_b
+    - one_b a
+  - one_c
+    - one_c a
+- two
+  - three
+    - three_a
+      - three_a a
+      - three_a b
+** [5_DONE] mixed lists                                               :list:
+1. ONE
+   - one A
+   - one B
+     1. one B 1
+     2. one B 2
+2. TWO
+3. THREE
+   - three A
+4. FOUR
+5. FIVE
+6. SIX
+7. SEVEN
+8. EIGHT
+9. NINE
+10. TEN
+    - ten A
+
+** [4_NOPE] malformed list                                            :list:
+this is probably a nope, as its a rare ~junk-in = junk-out~ scenario
+- one
+        - two: should be indented to 1
+   - three : should be inindented to 0
+     - four : should be indented to 1
+      - five : should be indented to 2
+** [5_DONE] check list                                          :list:check:
+- [ ] one
+  - [ ] one a
+  - [ ] one b
+    - [ ] one a 1
+- [ ] two
+  - [ ] two a
+    - [ ] two a 1
+** [5_DONE] no lists
+block list tag injection where they don't belong
+*** [5_DONE] no list in properties                             :properties:
+#+ATTR_ORG: prop: t
+:PROPERTIES:
+:YUT: - a list item
+:YII:   - another list item
+:SAM: 1. a numbered list item
+:SEI: 2. another numbered list item
+:MMM: - [ ] a checklist item
+:END:
+*** [5_DONE] no list in xmp
+#+BEGIN_SRC rebol
+- a list item
+  - another list item
+1. a numbered list item
+2. another numbered list item
+- [ ] a checklist item
+#+END_SRC
+*** [5_DONE] no list in tables                                      :table:
+#+BEGIN_TABLE
+| item                          | note        |
+|-------------------------------+-------------|
+| one                           | - list item |
+| - list item                   | two         |
+| - another list item           | three       |
+| 1. a numbered list item       | four        |
+| 2. another numbered list item | five        |
+| - [ ] checklist item          | six         |
+|-------------------------------+-------------|
+#+END_TABLE
+*** [5_DONE] no list in inline blocks                               :style:
+~- list item~
+~   - another list item~
+~ 1. a numbered list item~
+~ 2. another numbered list item~
+~ - [ ] checklist item~
+** [5_DONE] list parser                                         :sourcecode:
+Source for org to html list parsing, written with [[https://github.com/Oldes/Rebol3][Rebol3]]
+Using ~#+INCLUDE: "./presets/org_lists.r3" src rebol~ to ~<embed>~ this file.
+#+INCLUDE: "./presets/org_lists.r3" src rebol
+* [1_IP..] content [2/3]
+- [X] add line breaks
+- [X] fix link style inheritance
+- [ ] option to grab headline colors (hue) from current org theme
+** [5_DONE] linebreak parser                                    :sourcecode:
+Source for html linebreak parsing, written with [[https://github.com/Oldes/Rebol3][Rebol3]]
+Using ~#+INCLUDE: "./presets/linebreaks.r3" src rebol~ to ~<embed>~ this file.
+#+INCLUDE: "./presets/linebreaks.r3" src rebol
+** [5_DONE] inject css                                          :sourcecode:
+Source css for this site
+html files have to be loaded as txt files, or the browser will try to render it
+Using ~#+INCLUDE: "./presets/test_org_css.txt" src rebol~ to ~<embed>~ this file.
+#+INCLUDE: "./presets/test_org_css.txt" src html
+** [5_DONE] inject script                                       :sourcecode:
+Source javascript for this site
+html files have to be loaded as txt files, or the browser will try to render it
+Using ~#+INCLUDE: "./presets/insert_script.txt" src rebol~ to ~<embed>~ this file.
+#+INCLUDE: "./presets/insert_script.txt" src html
