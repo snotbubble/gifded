@@ -1,6 +1,9 @@
 # gifded
-script queue  
-works with Rebol3, Python and Shell-script
+Get It Fucking Done EDitor  
+
+- process stuff by daisychaining Rebol3, Python and Shell-scripts... whatever works  
+- quickly cache, bypass, reorder scripts  
+- save and load projects as an orgfile, cause shizzas & gizzas...  
 
 # usage
 - do not use this program, its here for demonstration purposes only
