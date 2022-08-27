@@ -1,2 +1,2 @@
 # output
-is a volatile 'pub' dir
+is a volatile dir
