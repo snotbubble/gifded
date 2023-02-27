@@ -1,7 +1,10 @@
 # gifded
-- process stuff by daisychaining Rebol3, Python and Shell-scripts... whatever works  
-- quickly cache, bypass, reorder scripts  
-- save and load projects as an orgfile, cause shizzas & gizzas...  
+Process stuff by daisychaining Rebol3, Python and Shell-scripts... whatever works.  
+Quickly cache, bypass, reorder scripts.  
+Save and load projects as an orgfile, cause shizzas & gizzas...  
+Which has since led me down the rabbithole of making a branching org-based process editor.  
+Org without the old-man-cock (emacs) would be great...  
+So probably no more updates to this program.
 
 # usage
 - do not use this program, its here for display only
