@@ -14,4 +14,4 @@ So probably no more updates to this program.
 - `clear && valac gifded.vala --pkg gtk4 --pkg gtksourceview-5 -X -lm`
 
 # screenie
-![screenie](./screenies/220828_gifded_screenie.png)
+![screenie](./screenies/230228_gifded_screenie.png)
